@@ -2026,6 +2026,46 @@ html[data-theme="dark"] .login-body {
   margin-bottom: 1rem;
 }
 
+.queue-scope {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin-bottom: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  overflow: hidden;
+  background: var(--surface);
+  width: fit-content;
+  max-width: 100%;
+}
+
+.queue-scope-btn {
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border);
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.queue-scope-btn:last-child {
+  border-right: none;
+}
+
+.queue-scope-btn:hover {
+  color: var(--text);
+  background: var(--surface-muted);
+}
+
+.queue-scope-btn.is-active {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
 .queue-toolbar .search-input {
   flex: 1;
   min-width: 160px;
@@ -2130,6 +2170,16 @@ html[data-theme="dark"] .login-body {
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
+}
+
+.task-detail-view[hidden],
+.queue-view[hidden],
+.dashboard-view[hidden],
+.coming-soon-view[hidden],
+.diary-view[hidden],
+.history-view[hidden],
+#today-view[hidden] {
+  display: none !important;
 }
 
 .task-detail-layout {

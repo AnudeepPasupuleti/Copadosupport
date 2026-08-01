@@ -176,7 +176,18 @@ def list_tasks(
     priority: Optional[str] = None,
     assignee_id: Optional[int] = None,
     mine: bool = False,
+    scope: str = "all",
 ):
+    """
+    scope:
+      - all: entire team queue
+      - assigned: cases assigned to the current user
+      - created: cases reported/created by the current user
+    """
+    scope = (scope or "all").strip().lower()
+    if scope not in ("all", "assigned", "created"):
+        raise HTTPException(status_code=400, detail="scope must be all, assigned, or created")
+
     query = db.query(TeamTask)
     if q:
         like = f"%{q.strip()}%"
@@ -194,8 +205,11 @@ def list_tasks(
     if priority:
         _validate_priority(priority)
         query = query.filter(TeamTask.priority == priority)
-    if mine:
+
+    if scope == "assigned" or mine:
         query = query.filter(TeamTask.assignee_id == user.id)
+    elif scope == "created":
+        query = query.filter(TeamTask.reporter_id == user.id)
     elif assignee_id is not None:
         query = query.filter(TeamTask.assignee_id == assignee_id)
 

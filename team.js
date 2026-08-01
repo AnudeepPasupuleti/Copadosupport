@@ -16,13 +16,13 @@
   let teammates = [];
   let editingTaskId = null;
   let notifTimer = null;
+  let queueScope = "all";
 
   const dashboardView = document.getElementById("dashboard-view");
   const queueView = document.getElementById("queue-view");
   const taskDetailView = document.getElementById("task-detail-view");
   const taskDetailBody = document.getElementById("task-detail-body");
   const queueTbody = document.getElementById("queue-tbody");
-  const queueEmpty = document.getElementById("queue-empty");
   const tasksToolbar = document.getElementById("tasks-toolbar");
 
   async function api(path, options = {}) {
@@ -97,14 +97,26 @@
       .map((u) => `<option value="${u.id}">${escapeHtml(u.name || u.email)}</option>`)
       .join("");
     if (filter) {
-      const mine = filter.value;
-      filter.innerHTML =
-        `<option value="">All assignees</option><option value="mine">Assigned to me</option>` + opts;
-      filter.value = mine;
+      const current = filter.value;
+      filter.innerHTML = `<option value="">Any assignee</option>` + opts;
+      filter.value = current;
+      // Assignee person filter only applies within "All team tasks"
+      filter.disabled = queueScope !== "all";
     }
     if (formAssignee) {
       formAssignee.innerHTML = `<option value="">Unassigned</option>` + opts;
     }
+  }
+
+  function setQueueScope(scope) {
+    queueScope = scope || "all";
+    document.querySelectorAll(".queue-scope-btn").forEach((btn) => {
+      const active = btn.dataset.scope === queueScope;
+      btn.classList.toggle("is-active", active);
+      btn.setAttribute("aria-selected", String(active));
+    });
+    fillAssigneeSelects();
+    loadQueue();
   }
 
   function priorityClass(p) {
@@ -118,6 +130,8 @@
   async function showDashboard() {
     await ensureMeta();
     hideTeamViews();
+    const todayView = document.getElementById("today-view");
+    if (todayView) todayView.hidden = true;
     dashboardView.hidden = false;
     const data = await api("/api/queue/dashboard");
     if (!data) return;
@@ -173,6 +187,8 @@
   async function showQueue() {
     await ensureMeta();
     hideTeamViews();
+    const todayView = document.getElementById("today-view");
+    if (todayView) todayView.hidden = true;
     queueView.hidden = false;
     await loadQueue();
   }
@@ -183,16 +199,33 @@
     const priority = document.getElementById("queue-filter-priority")?.value || "";
     const assignee = document.getElementById("queue-filter-assignee")?.value || "";
     const params = new URLSearchParams();
+    params.set("scope", queueScope || "all");
     if (q) params.set("q", q);
     if (status) params.set("status", status);
     if (priority) params.set("priority", priority);
-    if (assignee === "mine") params.set("mine", "true");
-    else if (assignee) params.set("assignee_id", assignee);
+    if (queueScope === "all" && assignee) params.set("assignee_id", assignee);
 
     const tasks = await api(`/api/queue/tasks?${params}`);
     if (!tasks) return;
     queueTbody.innerHTML = "";
-    queueEmpty.hidden = tasks.length > 0;
+    const empty = document.getElementById("queue-empty");
+    if (empty) {
+      empty.hidden = tasks.length > 0;
+      const title = empty.querySelector(".empty-title");
+      const hint = empty.querySelector(".empty-hint");
+      if (tasks.length === 0) {
+        if (queueScope === "assigned") {
+          if (title) title.textContent = "Nothing assigned to you";
+          if (hint) hint.textContent = "Cases assigned to you will show up here.";
+        } else if (queueScope === "created") {
+          if (title) title.textContent = "You haven’t created any cases";
+          if (hint) hint.textContent = "Use + New Task to report a case for the team.";
+        } else {
+          if (title) title.textContent = "No cases yet";
+          if (hint) hint.textContent = "Create a team task to start collaborating.";
+        }
+      }
+    }
     tasks.forEach((t) => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
@@ -201,8 +234,14 @@
         <td><span class="badge ${statusClass(t.status)}">${escapeHtml(statusLabel(t.status))}</span></td>
         <td><span class="badge ${priorityClass(t.priority)}">${escapeHtml(t.priority)}</span></td>
         <td>${escapeHtml((t.assignee && t.assignee.name) || "—")}</td>
+        <td>${escapeHtml((t.reporter && t.reporter.name) || "—")}</td>
         <td>${escapeHtml(t.due_date || "—")}</td>`;
       tr.querySelector(".queue-title-btn").addEventListener("click", () => openTaskDetail(t.id));
+      tr.style.cursor = "pointer";
+      tr.addEventListener("click", (e) => {
+        if (e.target.closest("button, a, select, input")) return;
+        openTaskDetail(t.id);
+      });
       queueTbody.appendChild(tr);
     });
   }
@@ -210,14 +249,29 @@
   async function openTaskDetail(taskId) {
     await ensureMeta();
     hideTeamViews();
+    const todayView = document.getElementById("today-view");
+    const diaryView = document.getElementById("diary-view");
+    const historyView = document.getElementById("history-view");
+    const comingSoon = document.getElementById("coming-soon-view");
+    const toolbar = document.getElementById("tasks-toolbar");
+    if (todayView) todayView.hidden = true;
+    if (diaryView) diaryView.hidden = true;
+    if (historyView) historyView.hidden = true;
+    if (comingSoon) comingSoon.hidden = true;
+    if (toolbar) toolbar.hidden = true;
+
     if (window.ChecklistApp) {
       window.ChecklistApp.activateNav("queue");
       window.ChecklistApp.setPageTitle("Case detail");
     }
     taskDetailView.hidden = false;
-    const task = await api(`/api/queue/tasks/${taskId}`);
-    if (!task) return;
-    renderTaskDetail(task);
+    try {
+      const task = await api(`/api/queue/tasks/${taskId}`);
+      if (!task) return;
+      renderTaskDetail(task);
+    } catch (err) {
+      taskDetailBody.innerHTML = `<p class="login-error">${escapeHtml(err.message || "Could not open task")}</p>`;
+    }
   }
 
   function renderTaskDetail(task) {
@@ -423,6 +477,9 @@
     document.getElementById("task-back-btn")?.addEventListener("click", () => {
       if (window.ChecklistApp) window.ChecklistApp.setView("queue");
       else showQueue();
+    });
+    document.querySelectorAll(".queue-scope-btn").forEach((btn) => {
+      btn.addEventListener("click", () => setQueueScope(btn.dataset.scope));
     });
     ["queue-search", "queue-filter-status", "queue-filter-priority", "queue-filter-assignee"].forEach(
       (id) => {

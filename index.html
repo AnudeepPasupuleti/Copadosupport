@@ -292,6 +292,17 @@
           </section>
 
           <section class="queue-view" id="queue-view" hidden aria-label="Team queue">
+            <div class="queue-scope" role="tablist" aria-label="Queue scope">
+              <button type="button" class="queue-scope-btn is-active" data-scope="all" role="tab" aria-selected="true">
+                All team tasks
+              </button>
+              <button type="button" class="queue-scope-btn" data-scope="assigned" role="tab" aria-selected="false">
+                Assigned to me
+              </button>
+              <button type="button" class="queue-scope-btn" data-scope="created" role="tab" aria-selected="false">
+                Created by me
+              </button>
+            </div>
             <div class="queue-toolbar">
               <input type="search" id="queue-search" class="search-input" placeholder="Search cases…" autocomplete="off" />
               <select id="queue-filter-status" class="add-select" aria-label="Filter status">
@@ -304,8 +315,7 @@
                 <option value="low">Low</option>
               </select>
               <select id="queue-filter-assignee" class="add-select" aria-label="Filter assignee">
-                <option value="">All assignees</option>
-                <option value="mine">Assigned to me</option>
+                <option value="">Any assignee</option>
               </select>
               <button type="button" class="btn btn-primary" id="queue-new-btn">+ New Task</button>
             </div>
@@ -318,6 +328,7 @@
                     <th>Status</th>
                     <th>Priority</th>
                     <th>Assignee</th>
+                    <th>Created by</th>
                     <th>Due</th>
                   </tr>
                 </thead>
