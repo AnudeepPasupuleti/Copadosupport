@@ -5,11 +5,38 @@ from sqlalchemy.orm import Session
 
 from .db import User, get_db
 
+ROLES = ("admin", "manager", "member")
+ROLE_LABELS = {
+    "admin": "Admin",
+    "manager": "Manager",
+    "member": "Member",
+}
+
+
+def normalize_role(role: Optional[str]) -> str:
+    value = (role or "member").strip().lower()
+    if value == "members":
+        value = "member"
+    if value not in ROLES:
+        return "member"
+    return value
+
+
+def get_user_role(user: User) -> str:
+    return normalize_role(getattr(user, "role", None))
+
 
 def is_admin_user(user: User) -> bool:
     from . import config
 
+    if get_user_role(user) == "admin":
+        return True
+    # Legacy fallback before role backfill
     return user.auth_type == "password" and user.username == config.ADMIN_USERNAME
+
+
+def is_manager_or_admin(user: User) -> bool:
+    return get_user_role(user) in ("admin", "manager") or is_admin_user(user)
 
 
 def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
@@ -24,6 +51,11 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
 
 
 def user_to_dict(user: User, request: Optional[Request] = None) -> dict:
+    role = get_user_role(user)
+    # Keep legacy admin flag in sync with role
+    admin = role == "admin" or is_admin_user(user)
+    if admin:
+        role = "admin"
     data = {
         "id": user.id,
         "email": user.email,
@@ -31,7 +63,10 @@ def user_to_dict(user: User, request: Optional[Request] = None) -> dict:
         "picture": user.picture,
         "auth_type": user.auth_type,
         "username": user.username,
-        "is_admin": is_admin_user(user),
+        "role": role,
+        "role_label": ROLE_LABELS.get(role, "Member"),
+        "is_admin": admin,
+        "is_manager": role == "manager" or admin,
         "has_password": bool(user.password_hash),
         "impersonating": False,
     }

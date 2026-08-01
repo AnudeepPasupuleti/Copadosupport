@@ -9,7 +9,7 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from .db import Notification, TaskComment, TeamTask, User, get_db, get_setting, set_setting
-from .deps import get_current_user, user_to_dict
+from .deps import get_current_user, is_manager_or_admin, user_to_dict
 
 router = APIRouter(prefix="/api/queue", tags=["queue"])
 
@@ -329,9 +329,9 @@ def delete_task(
     task = db.get(TeamTask, task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
-    is_admin = user_to_dict(user)["is_admin"]
+    is_admin = is_manager_or_admin(user)
     if not is_admin and task.reporter_id != user.id:
-        raise HTTPException(status_code=403, detail="Only reporter or admin can delete")
+        raise HTTPException(status_code=403, detail="Only reporter, manager, or admin can delete")
     db.query(Notification).filter(Notification.task_id == task_id).delete()
     db.delete(task)
     db.commit()

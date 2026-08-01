@@ -78,6 +78,12 @@ def _upsert_user(db: Session, row: dict, id_map: dict[int, int]) -> None:
         return
 
     existing = db.query(User).filter(User.email == email).one_or_none()
+    role = (row.get("role") or "member").strip().lower()
+    if role == "members":
+        role = "member"
+    if role not in ("admin", "manager", "member"):
+        role = "member"
+
     if existing:
         # Fill missing identity fields from backup (don't wipe newer live values blindly)
         if not existing.username and row.get("username"):
@@ -92,6 +98,8 @@ def _upsert_user(db: Session, row: dict, id_map: dict[int, int]) -> None:
             existing.name = row["name"]
         if row.get("picture") and not existing.picture:
             existing.picture = row["picture"]
+        if getattr(existing, "role", None) in (None, "", "member") and role != "member":
+            existing.role = role
         id_map[old_id] = existing.id
         return
 
@@ -104,6 +112,7 @@ def _upsert_user(db: Session, row: dict, id_map: dict[int, int]) -> None:
         name=row.get("name") or "",
         picture=row.get("picture"),
         auth_type=row.get("auth_type") or "oauth",
+        role=role,
         created_at=_parse_dt(row.get("created_at")) or datetime.now(timezone.utc),
     )
     db.add(user)

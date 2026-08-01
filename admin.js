@@ -44,7 +44,7 @@ const PANELS = {
   },
   users: {
     title: "Users",
-    desc: "Add users, log in as them, or reset their password. OAuth users can also get a username/password for sign-in.",
+    desc: "Assign roles (Admin, Manager, Member), log in as users, or reset passwords.",
   },
 };
 
@@ -121,18 +121,30 @@ async function loadUsers() {
     typeTd.textContent = u.auth_type || "";
 
     const roleTd = document.createElement("td");
-    const roleBadge = document.createElement("span");
-    roleBadge.className = u.is_admin ? "badge badge-admin" : "badge badge-muted";
-    roleBadge.textContent = u.is_admin ? "Admin" : "User";
-    roleTd.appendChild(roleBadge);
+    const roleSelect = document.createElement("select");
+    roleSelect.className = "field-input role-select";
+    roleSelect.dataset.roleUser = String(u.id);
+    roleSelect.dataset.email = u.email || "";
+    [
+      ["admin", "Admin"],
+      ["manager", "Manager"],
+      ["member", "Member"],
+    ].forEach(([value, label]) => {
+      const opt = document.createElement("option");
+      opt.value = value;
+      opt.textContent = label;
+      if ((u.role || "member") === value) opt.selected = true;
+      roleSelect.appendChild(opt);
+    });
+    roleTd.appendChild(roleSelect);
 
     const actionTd = document.createElement("td");
     actionTd.className = "cell-actions";
-    if (u.is_admin) {
-      const dash = document.createElement("span");
-      dash.className = "cell-muted";
-      dash.textContent = "—";
-      actionTd.appendChild(dash);
+    if (u.is_admin || u.role === "admin") {
+      const note = document.createElement("span");
+      note.className = "cell-muted";
+      note.textContent = "Admin";
+      actionTd.appendChild(note);
     } else {
       const loginAs = document.createElement("button");
       loginAs.type = "button";
@@ -213,7 +225,25 @@ changePasswordForm?.addEventListener("submit", async (e) => {
   }
 });
 
-addForm.addEventListener("submit", async (e) => {
+userTableBody.addEventListener("change", async (e) => {
+  const select = e.target.closest("[data-role-user]");
+  if (!select) return;
+  const userId = select.dataset.roleUser;
+  const email = select.dataset.email || "user";
+  const role = select.value;
+  try {
+    await api(`/api/admin/users/${userId}/role`, {
+      method: "POST",
+      body: JSON.stringify({ role }),
+    });
+    await loadUsers();
+  } catch (err) {
+    showUsersError(err.message || `Could not update role for ${email}`);
+    await loadUsers();
+  }
+});
+
+userForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   adminError.hidden = true;
   try {
@@ -223,10 +253,13 @@ addForm.addEventListener("submit", async (e) => {
         email: document.getElementById("new-email").value.trim(),
         name: document.getElementById("new-name").value.trim(),
         auth_type: "oauth",
+        role: document.getElementById("new-role")?.value || "member",
         copy_from_admin: document.getElementById("copy-admin").checked,
       }),
     });
     addForm.reset();
+    const roleEl = document.getElementById("new-role");
+    if (roleEl) roleEl.value = "member";
     await loadUsers();
   } catch (err) {
     showUsersError(err.message || "Could not add user");

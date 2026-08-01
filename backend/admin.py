@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from . import config
 from .db import User, UserState, get_db, get_setting, set_setting
-from .deps import get_current_user, is_admin_user, user_to_dict
+from .deps import get_current_user, is_admin_user, is_manager_or_admin, normalize_role, user_to_dict
 from .seed import empty_state, hash_password, verify_password
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -17,6 +17,10 @@ def require_admin(user: User = Depends(get_current_user)) -> User:
     if not is_admin_user(user):
         raise HTTPException(status_code=403, detail="Admin only")
     return user
+
+
+def _admin_count(db: Session) -> int:
+    return db.query(User).filter(User.role == "admin").count()
 
 
 class SettingsUpdate(BaseModel):
@@ -31,6 +35,11 @@ class CreateUserBody(BaseModel):
     username: Optional[str] = None
     password: Optional[str] = None
     copy_from_admin: bool = False
+    role: str = "member"
+
+
+class SetRoleBody(BaseModel):
+    role: str
 
 
 class ResetPasswordBody(BaseModel):
@@ -107,6 +116,7 @@ def create_user(
         auth_type=auth_type,
         username=username,
         password_hash=password_hash,
+        role=normalize_role(body.role),
     )
     db.add(user)
     db.flush()
@@ -126,6 +136,31 @@ def create_user(
     return user_to_dict(user)
 
 
+@router.post("/users/{user_id}/role")
+def set_user_role(
+    user_id: int,
+    body: SetRoleBody,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    role = normalize_role(body.role)
+    user = db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    current = normalize_role(user.role)
+    if current == "admin" and role != "admin" and _admin_count(db) <= 1:
+        raise HTTPException(status_code=400, detail="Cannot demote the last Admin")
+
+    if user_id == admin.id and role != "admin":
+        raise HTTPException(status_code=400, detail="Cannot demote your own Admin role")
+
+    user.role = role
+    db.commit()
+    db.refresh(user)
+    return user_to_dict(user)
+
+
 @router.delete("/users/{user_id}")
 def delete_user(
     user_id: int,
@@ -139,7 +174,7 @@ def delete_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     if is_admin_user(user):
-        raise HTTPException(status_code=400, detail="Cannot remove the Admin account")
+        raise HTTPException(status_code=400, detail="Cannot remove an Admin account")
 
     state = db.get(UserState, user.id)
     if state:

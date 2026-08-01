@@ -195,6 +195,36 @@ def test_team_queue_dashboard_and_notifications(client):
     assert "unread" in notifs
 
 
+def test_user_roles(client):
+    client.post("/auth/login", json={"username": "admin", "password": "admin"})
+    me = client.get("/api/me").json()
+    assert me["role"] == "admin"
+    assert me["is_admin"] is True
+
+    created = client.post(
+        "/api/admin/users",
+        json={"email": "mgr@example.com", "name": "Mgr", "auth_type": "oauth", "role": "member"},
+    )
+    assert created.status_code == 200
+    user_id = created.json()["id"]
+    assert created.json()["role"] == "member"
+
+    promoted = client.post(
+        f"/api/admin/users/{user_id}/role",
+        json={"role": "manager"},
+    )
+    assert promoted.status_code == 200
+    assert promoted.json()["role"] == "manager"
+    assert promoted.json()["is_manager"] is True
+
+    # Cannot demote self
+    bad = client.post(
+        f"/api/admin/users/{me['id']}/role",
+        json={"role": "member"},
+    )
+    assert bad.status_code == 400
+
+
 def test_impersonate_and_reset_password(client):
     client.post("/auth/login", json={"username": "admin", "password": "admin"})
     created = client.post(

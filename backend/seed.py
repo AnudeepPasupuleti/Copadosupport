@@ -66,6 +66,7 @@ def seed_users(db: Session) -> None:
         email="admin@local",
         name="Admin",
         auth_type="password",
+        role="admin",
     )
     db.add(admin)
     db.flush()
@@ -75,6 +76,7 @@ def seed_users(db: Session) -> None:
         email=config.USER1_EMAIL,
         name="apasupuleti",
         auth_type="oauth",
+        role="member",
     )
     db.add(user1)
     db.flush()

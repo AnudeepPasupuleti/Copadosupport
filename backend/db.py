@@ -23,6 +23,7 @@ class User(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False, default="")
     picture: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
     auth_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    role: Mapped[str] = mapped_column(String(32), nullable=False, default="member")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -122,23 +123,57 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 def init_db() -> None:
     Base.metadata.create_all(bind=engine)
-    _migrate_sqlite()
+    _migrate_schema()
 
 
-def _migrate_sqlite() -> None:
-    if engine.dialect.name != "sqlite":
-        return
+def _users_columns(conn) -> set[str]:
+    if engine.dialect.name == "sqlite":
+        return {row[1] for row in conn.execute(text("PRAGMA table_info(users)"))}
+    rows = conn.execute(
+        text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_name = 'users'"
+        )
+    )
+    return {row[0] for row in rows}
+
+
+def _migrate_schema() -> None:
     with engine.begin() as conn:
-        cols = {row[1] for row in conn.execute(text("PRAGMA table_info(users)"))}
-        if "github_id" not in cols:
+        cols = _users_columns(conn)
+        if "github_id" not in cols and engine.dialect.name == "sqlite":
             conn.execute(text("ALTER TABLE users ADD COLUMN github_id VARCHAR(255)"))
-            # Move misplaced GitHub ids from google_sub for github users
             conn.execute(
                 text(
                     "UPDATE users SET github_id = google_sub, google_sub = NULL "
                     "WHERE auth_type = 'github' AND google_sub IS NOT NULL AND github_id IS NULL"
                 )
             )
+            cols = _users_columns(conn)
+
+        if "role" not in cols:
+            if engine.dialect.name == "sqlite":
+                conn.execute(
+                    text("ALTER TABLE users ADD COLUMN role VARCHAR(32) NOT NULL DEFAULT 'member'")
+                )
+            else:
+                conn.execute(
+                    text(
+                        "ALTER TABLE users ADD COLUMN role VARCHAR(32) "
+                        "NOT NULL DEFAULT 'member'"
+                    )
+                )
+            conn.execute(
+                text(
+                    "UPDATE users SET role = 'admin' "
+                    "WHERE username = :username AND auth_type = 'password'"
+                ),
+                {"username": config.ADMIN_USERNAME},
+            )
+
+        conn.execute(
+            text("UPDATE users SET role = 'member' WHERE role IS NULL OR role = ''")
+        )
 
 
 def get_db():

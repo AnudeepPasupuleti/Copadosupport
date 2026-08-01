@@ -516,9 +516,11 @@ body.admin-shell input {
   color: var(--admin-muted);
 }
 
-.cell-actions {
-  text-align: right;
-  white-space: nowrap;
+.role-select {
+  min-width: 8.5rem;
+  height: 32px;
+  padding: 0 0.5rem;
+  font-size: 0.8rem;
 }
 
 .users-empty {
