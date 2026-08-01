@@ -264,6 +264,8 @@ function showUser(user) {
   // Admin control must not exist in the DOM for non-admins
   document.getElementById("admin-link")?.remove();
   document.getElementById("admin-nav")?.remove();
+  const orgNav = document.getElementById("nav-org");
+  if (orgNav) orgNav.hidden = !(user.can_view_org || user.can_edit_org);
   if (user.is_admin && !user.impersonating) {
     if (menuAdminSlot) {
       const adminLink = document.createElement("a");
@@ -980,6 +982,11 @@ function setView(view) {
   if (window.OrgApp) window.OrgApp.hideOrgView();
   if (window.TeamApp) window.TeamApp.hideTeamViews();
 
+  if (view === "org" && !(currentUser?.can_view_org || currentUser?.can_edit_org)) {
+    setView("dashboard");
+    return;
+  }
+
   if (window.OrgApp && window.OrgApp.onAppView(view)) {
     if (pageTitle) pageTitle.textContent = "Org Chart";
     if (dateLabel) {
@@ -1053,9 +1060,13 @@ function fillProfileForm(user) {
   const emailText = document.getElementById("profile-email-text");
   const usernameText = document.getElementById("profile-username-text");
   const roleText = document.getElementById("profile-role-text");
+  const managerText = document.getElementById("profile-manager-text");
+  const teamText = document.getElementById("profile-team-text");
   if (emailText) emailText.textContent = email || "—";
   if (usernameText) usernameText.textContent = user.username || "Not set";
   if (roleText) roleText.textContent = roleLabel;
+  if (managerText) managerText.textContent = user.manager_name || user.manager?.name || "—";
+  if (teamText) teamText.textContent = user.team_name || "—";
   setProfileAvatar(user.picture, name || email);
 
   const hasPassword = !!user.has_password;

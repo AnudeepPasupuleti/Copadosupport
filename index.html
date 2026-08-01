@@ -57,7 +57,7 @@
             <span class="nav-icon" aria-hidden="true">☰</span>
             Team Queue
           </button>
-          <button type="button" class="nav-item" data-nav="org" data-view="org">
+          <button type="button" class="nav-item" data-nav="org" data-view="org" id="nav-org" hidden>
             <span class="nav-icon" aria-hidden="true">◎</span>
             Org Chart
           </button>
@@ -534,8 +534,16 @@
                         <dt>Role</dt>
                         <dd id="profile-role-text">Member</dd>
                       </div>
+                      <div class="profile-meta-row">
+                        <dt>Manager</dt>
+                        <dd id="profile-manager-text">—</dd>
+                      </div>
+                      <div class="profile-meta-row">
+                        <dt>Team</dt>
+                        <dd id="profile-team-text">—</dd>
+                      </div>
                     </dl>
-                    <p class="profile-hint">Email and role are managed by Admin and can’t be edited here.</p>
+                    <p class="profile-hint">Email, role, manager, and team are managed by Admin and can’t be edited here.</p>
 
                     <p class="profile-alert profile-alert-error" id="profile-error" hidden></p>
                     <p class="profile-alert profile-alert-ok" id="profile-success" hidden>Profile saved.</p>

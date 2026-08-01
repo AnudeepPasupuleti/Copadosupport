@@ -15,7 +15,7 @@ from .admin import router as admin_router
 from .queue import router as queue_router
 from .org import router as org_router
 from .db import UserState, get_db, init_db, SessionLocal
-from .deps import get_current_user, user_to_dict
+from .deps import get_current_user, user_org_context, user_to_dict
 from .seed import empty_state, seed_users
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -51,8 +51,10 @@ def health():
 
 
 @app.get("/api/me")
-def me(request: Request, user=Depends(get_current_user)):
-    return user_to_dict(user, request)
+def me(request: Request, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    data = user_to_dict(user, request)
+    data.update(user_org_context(db, user))
+    return data
 
 
 class ProfileUpdate(BaseModel):
@@ -97,7 +99,9 @@ def update_profile(
 
     db.commit()
     db.refresh(db_user)
-    return user_to_dict(db_user, request)
+    data = user_to_dict(db_user, request)
+    data.update(user_org_context(db, db_user))
+    return data
 
 
 @app.post("/api/me/password")

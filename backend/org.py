@@ -12,6 +12,12 @@ from .deps import get_current_user, is_manager_or_admin, user_to_dict
 router = APIRouter(prefix="/api/org", tags=["org"])
 
 
+def require_org_viewer(user: User = Depends(get_current_user)) -> User:
+    if not is_manager_or_admin(user):
+        raise HTTPException(status_code=403, detail="Admin or Manager only")
+    return user
+
+
 def require_org_editor(user: User = Depends(get_current_user)) -> User:
     if not is_manager_or_admin(user):
         raise HTTPException(status_code=403, detail="Admin or Manager only")
@@ -101,7 +107,7 @@ def _team_dict(db: Session, team: OrgTeam) -> dict:
 
 
 @router.get("/chart")
-def get_chart(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def get_chart(db: Session = Depends(get_db), user: User = Depends(require_org_viewer)):
     users = db.query(User).order_by(User.id.asc()).all()
     teams = db.query(OrgTeam).order_by(OrgTeam.name.asc()).all()
     return {
@@ -138,7 +144,7 @@ def set_manager(
 
 
 @router.get("/teams")
-def list_teams(db: Session = Depends(get_db), _user: User = Depends(get_current_user)):
+def list_teams(db: Session = Depends(get_db), _user: User = Depends(require_org_viewer)):
     teams = db.query(OrgTeam).order_by(OrgTeam.name.asc()).all()
     return [_team_dict(db, t) for t in teams]
 

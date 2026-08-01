@@ -47,6 +47,40 @@ def is_manager_or_admin(user: User) -> bool:
     return get_user_role(user) in ("super_admin", "admin", "manager") or is_admin_user(user)
 
 
+def user_org_context(db: Session, user: User) -> dict:
+    """Manager + team memberships for profile /api/me."""
+    from .db import OrgTeam, OrgTeamMember
+
+    manager = None
+    manager_id = getattr(user, "reports_to_id", None)
+    if manager_id:
+        boss = db.get(User, manager_id)
+        if boss:
+            manager = {
+                "id": boss.id,
+                "name": boss.name or boss.email,
+                "email": boss.email,
+            }
+
+    rows = (
+        db.query(OrgTeamMember, OrgTeam)
+        .join(OrgTeam, OrgTeam.id == OrgTeamMember.team_id)
+        .filter(OrgTeamMember.user_id == user.id)
+        .order_by(OrgTeam.name.asc())
+        .all()
+    )
+    teams = [
+        {"id": team.id, "name": team.name, "title": (member.title or "").strip()}
+        for member, team in rows
+    ]
+    return {
+        "manager": manager,
+        "manager_name": manager["name"] if manager else None,
+        "teams": teams,
+        "team_name": ", ".join(t["name"] for t in teams) if teams else None,
+    }
+
+
 def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
     user_id = request.session.get("user_id")
     if not user_id:
@@ -77,10 +111,15 @@ def user_to_dict(user: User, request: Optional[Request] = None) -> dict:
         "is_admin": admin,
         "is_super_admin": super_admin,
         "is_manager": role == "manager" or admin,
+        "can_view_org": role in ("super_admin", "admin", "manager") or admin,
         "can_edit_org": role in ("super_admin", "admin", "manager") or admin,
         "has_password": bool(user.password_hash),
         "impersonating": False,
         "reports_to_id": getattr(user, "reports_to_id", None),
+        "manager": None,
+        "manager_name": None,
+        "teams": [],
+        "team_name": None,
     }
     if request is not None:
         impersonator_id = request.session.get("impersonator_id")
