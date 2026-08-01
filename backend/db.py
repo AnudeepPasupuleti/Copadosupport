@@ -210,6 +210,19 @@ def _migrate_schema() -> None:
             text("UPDATE users SET role = 'member' WHERE role IS NULL OR role = ''")
         )
 
+        # Bootstrap Super Admin from seeded password Admin when none exist yet
+        super_count = conn.execute(
+            text("SELECT COUNT(*) FROM users WHERE role = 'super_admin'")
+        ).scalar()
+        if not super_count:
+            conn.execute(
+                text(
+                    "UPDATE users SET role = 'super_admin' "
+                    "WHERE username = :username AND auth_type = 'password'"
+                ),
+                {"username": config.ADMIN_USERNAME},
+            )
+
         cols = _users_columns(conn)
         if "reports_to_id" not in cols:
             conn.execute(text("ALTER TABLE users ADD COLUMN reports_to_id INTEGER"))

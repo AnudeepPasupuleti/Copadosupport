@@ -37,6 +37,8 @@ const adminError = document.getElementById("admin-error");
 const pageTitle = document.getElementById("page-title");
 const pageDesc = document.getElementById("page-desc");
 
+let currentAdmin = null;
+
 const PANELS = {
   users: {
     title: "Users",
@@ -95,7 +97,8 @@ async function loadUsers() {
   try {
     status = await api("/api/admin/status");
     if (statusEl) {
-      statusEl.textContent = `Database: ${status.dialect} · ${status.db_host || "local"}/${status.db_name || "—"} · ${status.user_count} users (${status.roles?.admin || 0} admin, ${status.roles?.manager || 0} manager, ${status.roles?.member || 0} member) · ${status.ticket_count} tickets`;
+      const r = status.roles || {};
+      statusEl.textContent = `Database: ${status.dialect} · ${status.db_host || "local"}/${status.db_name || "—"} · ${status.user_count} users (${r.super_admin || 0} super admin, ${r.admin || 0} admin, ${r.manager || 0} manager, ${r.member || 0} member) · ${status.ticket_count} tickets`;
     }
   } catch (err) {
     if (statusEl) statusEl.textContent = "Could not read database status.";
@@ -121,6 +124,9 @@ async function loadUsers() {
     navUserCount.hidden = false;
   }
 
+  const iAmSuper = !!(currentAdmin && currentAdmin.is_super_admin);
+  const myId = currentAdmin && currentAdmin.id;
+
   users.forEach((u) => {
     const tr = document.createElement("tr");
 
@@ -140,26 +146,52 @@ async function loadUsers() {
     roleSelect.className = "field-input role-select";
     roleSelect.dataset.roleUser = String(u.id);
     roleSelect.dataset.email = u.email || "";
-    [
+    const roleOptions = [
       ["admin", "Admin"],
       ["manager", "Manager"],
       ["member", "Member"],
-    ].forEach(([value, label]) => {
+    ];
+    if (iAmSuper || u.role === "super_admin") {
+      roleOptions.unshift(["super_admin", "Super Admin"]);
+    }
+    roleOptions.forEach(([value, label]) => {
       const opt = document.createElement("option");
       opt.value = value;
       opt.textContent = label;
       if ((u.role || "member") === value) opt.selected = true;
       roleSelect.appendChild(opt);
     });
+    if (u.role === "super_admin" && !iAmSuper) {
+      roleSelect.disabled = true;
+    }
     roleTd.appendChild(roleSelect);
 
     const actionTd = document.createElement("td");
     actionTd.className = "cell-actions";
-    if (u.is_admin || u.role === "admin") {
+    const isSuper = u.is_super_admin || u.role === "super_admin";
+    const isAdmin = u.is_admin || u.role === "admin" || isSuper;
+    const isSelf = myId != null && u.id === myId;
+
+    if (isSuper) {
       const note = document.createElement("span");
       note.className = "cell-muted";
-      note.textContent = "Admin";
+      note.textContent = "Super Admin";
       actionTd.appendChild(note);
+    } else if (isAdmin) {
+      if (iAmSuper && !isSelf) {
+        const loginAs = document.createElement("button");
+        loginAs.type = "button";
+        loginAs.className = "btn btn-outline";
+        loginAs.textContent = "Login as";
+        loginAs.dataset.impersonate = String(u.id);
+        loginAs.dataset.email = u.email || "";
+        actionTd.appendChild(loginAs);
+      } else {
+        const note = document.createElement("span");
+        note.className = "cell-muted";
+        note.textContent = "Admin";
+        actionTd.appendChild(note);
+      }
     } else {
       const loginAs = document.createElement("button");
       loginAs.type = "button";
@@ -344,6 +376,14 @@ userTableBody.addEventListener("click", async (e) => {
     if (!me.is_admin) {
       location.href = "/";
       return;
+    }
+    currentAdmin = me;
+    const newRole = document.getElementById("new-role");
+    if (newRole && me.is_super_admin) {
+      const opt = document.createElement("option");
+      opt.value = "super_admin";
+      opt.textContent = "Super Admin";
+      newRole.appendChild(opt);
     }
     const hash = (location.hash || "#users").replace("#", "");
     setPanel(hash);

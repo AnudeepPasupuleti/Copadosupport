@@ -7,7 +7,13 @@ from sqlalchemy.orm import Session
 
 from . import config
 from .db import User, UserState, get_db, get_setting, set_setting
-from .deps import get_current_user, is_admin_user, is_manager_or_admin, normalize_role, user_to_dict
+from .deps import (
+    get_current_user,
+    is_admin_user,
+    is_super_admin,
+    normalize_role,
+    user_to_dict,
+)
 from .seed import empty_state, hash_password, verify_password
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -19,8 +25,12 @@ def require_admin(user: User = Depends(get_current_user)) -> User:
     return user
 
 
-def _admin_count(db: Session) -> int:
-    return db.query(User).filter(User.role == "admin").count()
+def _super_admin_count(db: Session) -> int:
+    return db.query(User).filter(User.role == "super_admin").count()
+
+
+def _admin_level_count(db: Session) -> int:
+    return db.query(User).filter(User.role.in_(("admin", "super_admin"))).count()
 
 
 class SettingsUpdate(BaseModel):
@@ -101,7 +111,7 @@ def admin_status(db: Session = Depends(get_db), _admin: User = Depends(require_a
         "ticket_count": db.query(TeamTask).count(),
         "roles": {
             role: db.query(User).filter(User.role == role).count()
-            for role in ("admin", "manager", "member")
+            for role in ("super_admin", "admin", "manager", "member")
         },
     }
 
@@ -123,6 +133,10 @@ def create_user(
     if auth_type not in ("oauth", "password", "github", "google"):
         raise HTTPException(status_code=400, detail="Invalid auth_type")
 
+    role = normalize_role(body.role)
+    if role == "super_admin" and not is_super_admin(admin):
+        raise HTTPException(status_code=403, detail="Only Super Admin can create Super Admin users")
+
     username = None
     password_hash = None
     if auth_type == "password":
@@ -139,7 +153,7 @@ def create_user(
         auth_type=auth_type,
         username=username,
         password_hash=password_hash,
-        role=normalize_role(body.role),
+        role=role,
     )
     db.add(user)
     db.flush()
@@ -172,10 +186,24 @@ def set_user_role(
         raise HTTPException(status_code=404, detail="User not found")
 
     current = normalize_role(user.role)
-    if current == "admin" and role != "admin" and _admin_count(db) <= 1:
-        raise HTTPException(status_code=400, detail="Cannot demote the last Admin")
+    if role == "super_admin" or current == "super_admin":
+        if not is_super_admin(admin):
+            raise HTTPException(
+                status_code=403,
+                detail="Only Super Admin can assign or change Super Admin roles",
+            )
 
-    if user_id == admin.id and role != "admin":
+    if current == "super_admin" and role != "super_admin":
+        if _super_admin_count(db) <= 1:
+            raise HTTPException(status_code=400, detail="Cannot demote the last Super Admin")
+        if user_id == admin.id:
+            raise HTTPException(status_code=400, detail="Cannot demote your own Super Admin role")
+
+    if current in ("admin", "super_admin") and role not in ("admin", "super_admin"):
+        if _admin_level_count(db) <= 1:
+            raise HTTPException(status_code=400, detail="Cannot demote the last Admin")
+
+    if user_id == admin.id and role not in ("admin", "super_admin") and is_admin_user(admin):
         raise HTTPException(status_code=400, detail="Cannot demote your own Admin role")
 
     user.role = role
@@ -222,7 +250,9 @@ def impersonate_user(
     target = db.get(User, user_id)
     if not target:
         raise HTTPException(status_code=404, detail="User not found")
-    if is_admin_user(target):
+    if is_super_admin(target):
+        raise HTTPException(status_code=400, detail="Cannot log in as Super Admin")
+    if is_admin_user(target) and not is_super_admin(admin):
         raise HTTPException(status_code=400, detail="Cannot log in as Admin")
 
     request.session["impersonator_id"] = admin.id

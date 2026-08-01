@@ -206,8 +206,9 @@ def test_team_queue_dashboard_and_notifications(client):
 def test_user_roles(client):
     client.post("/auth/login", json={"username": "admin", "password": "admin"})
     me = client.get("/api/me").json()
-    assert me["role"] == "admin"
+    assert me["role"] == "super_admin"
     assert me["is_admin"] is True
+    assert me["is_super_admin"] is True
 
     created = client.post(
         "/api/admin/users",
@@ -237,6 +238,79 @@ def test_user_roles(client):
     body = status.json()
     assert body["user_count"] >= 2
     assert "dialect" in body
+    assert body["roles"]["super_admin"] >= 1
+
+
+def test_super_admin_impersonate_admins(client):
+    client.post("/auth/login", json={"username": "admin", "password": "admin"})
+    me = client.get("/api/me").json()
+    assert me["is_super_admin"] is True
+
+    other_admin = client.post(
+        "/api/admin/users",
+        json={
+            "email": "admin2@example.com",
+            "name": "Admin Two",
+            "auth_type": "password",
+            "username": "admin2",
+            "password": "admin2pass",
+            "role": "admin",
+        },
+    )
+    assert other_admin.status_code == 200
+    other_admin_id = other_admin.json()["id"]
+    assert other_admin.json()["role"] == "admin"
+    assert other_admin.json()["is_admin"] is True
+    assert other_admin.json()["is_super_admin"] is False
+
+    other_sa = client.post(
+        "/api/admin/users",
+        json={
+            "email": "sa2@example.com",
+            "name": "Super Two",
+            "auth_type": "password",
+            "username": "sa2",
+            "password": "sa2pass12",
+            "role": "super_admin",
+        },
+    )
+    assert other_sa.status_code == 200
+    other_sa_id = other_sa.json()["id"]
+    assert other_sa.json()["is_super_admin"] is True
+
+    # Super Admin can impersonate a normal Admin
+    ok = client.post(f"/api/admin/users/{other_admin_id}/impersonate")
+    assert ok.status_code == 200
+    assert ok.json()["user"]["email"] == "admin2@example.com"
+    assert client.get("/api/me").json()["impersonating"] is True
+
+    stop = client.post("/api/admin/stop-impersonating")
+    assert stop.status_code == 200
+    assert stop.json()["user"]["is_super_admin"] is True
+
+    # Super Admin cannot impersonate another Super Admin
+    blocked_sa = client.post(f"/api/admin/users/{other_sa_id}/impersonate")
+    assert blocked_sa.status_code == 400
+
+    client.post("/auth/logout")
+    assert client.post("/auth/login", json={"username": "admin2", "password": "admin2pass"}).status_code == 200
+    assert client.get("/api/me").json()["role"] == "admin"
+
+    peer = client.post(
+        "/api/admin/users",
+        json={
+            "email": "admin3@example.com",
+            "name": "Admin Three",
+            "auth_type": "oauth",
+            "role": "admin",
+        },
+    )
+    assert peer.status_code == 200
+
+    # Normal Admin cannot impersonate another Admin
+    denied = client.post(f"/api/admin/users/{peer.json()['id']}/impersonate")
+    assert denied.status_code == 400
+    assert "admin" in denied.json()["detail"].lower()
 
 
 def test_impersonate_and_reset_password(client):

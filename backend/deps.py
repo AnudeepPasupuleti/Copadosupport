@@ -5,8 +5,9 @@ from sqlalchemy.orm import Session
 
 from .db import User, get_db
 
-ROLES = ("admin", "manager", "member")
+ROLES = ("super_admin", "admin", "manager", "member")
 ROLE_LABELS = {
+    "super_admin": "Super Admin",
     "admin": "Admin",
     "manager": "Manager",
     "member": "Member",
@@ -17,6 +18,8 @@ def normalize_role(role: Optional[str]) -> str:
     value = (role or "member").strip().lower()
     if value == "members":
         value = "member"
+    if value == "superadmin":
+        value = "super_admin"
     if value not in ROLES:
         return "member"
     return value
@@ -26,17 +29,22 @@ def get_user_role(user: User) -> str:
     return normalize_role(getattr(user, "role", None))
 
 
+def is_super_admin(user: User) -> bool:
+    return get_user_role(user) == "super_admin"
+
+
 def is_admin_user(user: User) -> bool:
     from . import config
 
-    if get_user_role(user) == "admin":
+    role = get_user_role(user)
+    if role in ("admin", "super_admin"):
         return True
     # Legacy fallback before role backfill
     return user.auth_type == "password" and user.username == config.ADMIN_USERNAME
 
 
 def is_manager_or_admin(user: User) -> bool:
-    return get_user_role(user) in ("admin", "manager") or is_admin_user(user)
+    return get_user_role(user) in ("super_admin", "admin", "manager") or is_admin_user(user)
 
 
 def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
@@ -52,9 +60,10 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
 
 def user_to_dict(user: User, request: Optional[Request] = None) -> dict:
     role = get_user_role(user)
-    # Keep legacy admin flag in sync with role
-    admin = role == "admin" or is_admin_user(user)
-    if admin:
+    super_admin = role == "super_admin"
+    admin = role in ("admin", "super_admin") or is_admin_user(user)
+    # Legacy password admin without role backfill → display as admin, not super_admin
+    if admin and role not in ("admin", "super_admin"):
         role = "admin"
     data = {
         "id": user.id,
@@ -66,8 +75,9 @@ def user_to_dict(user: User, request: Optional[Request] = None) -> dict:
         "role": role,
         "role_label": ROLE_LABELS.get(role, "Member"),
         "is_admin": admin,
+        "is_super_admin": super_admin,
         "is_manager": role == "manager" or admin,
-        "can_edit_org": role in ("admin", "manager") or admin,
+        "can_edit_org": role in ("super_admin", "admin", "manager") or admin,
         "has_password": bool(user.password_hash),
         "impersonating": False,
         "reports_to_id": getattr(user, "reports_to_id", None),

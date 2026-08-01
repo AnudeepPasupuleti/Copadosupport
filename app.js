@@ -1042,7 +1042,11 @@ function fillProfileForm(user) {
   if (roleBadge) {
     roleBadge.textContent = roleLabel;
     roleBadge.className = `profile-role-pill ${
-      user.is_admin ? "badge-admin" : user.role === "manager" ? "badge-manager" : ""
+      user.is_admin || user.role === "super_admin"
+        ? "badge-admin"
+        : user.role === "manager"
+          ? "badge-manager"
+          : ""
     }`;
   }
   document.getElementById("profile-name").value = name;
