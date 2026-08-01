@@ -74,6 +74,41 @@ body {
   overflow: hidden;
 }
 
+.impersonation-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0.55rem 1rem;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-bottom: 1px solid #f59e0b;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.impersonation-banner[hidden] {
+  display: none !important;
+}
+
+.impersonation-exit {
+  border: 1px solid #d97706;
+  background: #fff;
+  color: #92400e;
+  border-radius: 6px;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.impersonation-exit:hover {
+  background: #fffbeb;
+}
+
 /* ——— App shell ——— */
 
 .app-shell {

@@ -437,6 +437,21 @@ body.admin-shell input {
   background: var(--admin-accent-hover);
 }
 
+.btn-outline {
+  background: #fff;
+  color: var(--admin-ink);
+  border-color: var(--admin-border);
+  height: 30px;
+  padding: 0 0.65rem;
+  font-size: 0.78rem;
+  margin-right: 0.35rem;
+}
+
+.btn-outline:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
 .btn-danger-outline {
   background: transparent;
   color: var(--admin-danger);

@@ -44,7 +44,7 @@ const PANELS = {
   },
   users: {
     title: "Users",
-    desc: "Current accounts in the directory. Add users by email so they can sign in with Google or GitHub.",
+    desc: "Add users, log in as them, or reset their password. OAuth users can also get a username/password for sign-in.",
   },
 };
 
@@ -134,6 +134,24 @@ async function loadUsers() {
       dash.textContent = "—";
       actionTd.appendChild(dash);
     } else {
+      const loginAs = document.createElement("button");
+      loginAs.type = "button";
+      loginAs.className = "btn btn-outline";
+      loginAs.textContent = "Login as";
+      loginAs.dataset.impersonate = String(u.id);
+      loginAs.dataset.email = u.email || "";
+      actionTd.appendChild(loginAs);
+
+      const resetPw = document.createElement("button");
+      resetPw.type = "button";
+      resetPw.className = "btn btn-outline";
+      resetPw.textContent = u.has_password ? "Reset password" : "Set password";
+      resetPw.dataset.resetPw = String(u.id);
+      resetPw.dataset.email = u.email || "";
+      resetPw.dataset.username = u.username || "";
+      resetPw.dataset.hasPassword = u.has_password ? "1" : "0";
+      actionTd.appendChild(resetPw);
+
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "btn btn-danger-outline";
@@ -217,6 +235,49 @@ addForm.addEventListener("submit", async (e) => {
 });
 
 userTableBody.addEventListener("click", async (e) => {
+  const impersonateBtn = e.target.closest("[data-impersonate]");
+  if (impersonateBtn) {
+    const email = impersonateBtn.dataset.email || "this user";
+    if (!confirm(`Log in as ${email}? You can return to Admin from the yellow banner.`)) return;
+    try {
+      await api(`/api/admin/users/${impersonateBtn.dataset.impersonate}/impersonate`, {
+        method: "POST",
+        body: "{}",
+      });
+      location.href = "/";
+    } catch (err) {
+      showUsersError(err.message || "Could not log in as user");
+    }
+    return;
+  }
+
+  const resetBtn = e.target.closest("[data-reset-pw]");
+  if (resetBtn) {
+    const email = resetBtn.dataset.email || "this user";
+    let username = resetBtn.dataset.username || "";
+    if (!username) {
+      username = (prompt(`Username for ${email} (needed for password login):`) || "").trim();
+      if (!username) return;
+    }
+    const newPassword = (prompt(`New password for ${email} (min 8 characters):`) || "").trim();
+    if (!newPassword) return;
+    if (newPassword.length < 8) {
+      showUsersError("Password must be at least 8 characters");
+      return;
+    }
+    try {
+      const result = await api(`/api/admin/users/${resetBtn.dataset.resetPw}/reset-password`, {
+        method: "POST",
+        body: JSON.stringify({ new_password: newPassword, username }),
+      });
+      alert(`Password set for ${result.username}. Share it securely with the user.`);
+      await loadUsers();
+    } catch (err) {
+      showUsersError(err.message || "Could not reset password");
+    }
+    return;
+  }
+
   const btn = e.target.closest("[data-remove]");
   if (!btn) return;
   const email = btn.dataset.email || "this user";

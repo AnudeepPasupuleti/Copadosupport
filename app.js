@@ -233,10 +233,25 @@ function showUser(user) {
     userAvatar.hidden = false;
   }
 
+  const banner = document.getElementById("impersonation-banner");
+  const bannerText = document.getElementById("impersonation-text");
+  if (banner) {
+    if (user.impersonating) {
+      banner.hidden = false;
+      if (bannerText) {
+        bannerText.textContent = `Logged in as ${user.name || user.email || "user"} (Admin impersonation)`;
+      }
+      document.body.classList.add("is-impersonating");
+    } else {
+      banner.hidden = true;
+      document.body.classList.remove("is-impersonating");
+    }
+  }
+
   // Admin control must not exist in the DOM for non-admins
   document.getElementById("admin-link")?.remove();
   document.getElementById("admin-nav")?.remove();
-  if (user.is_admin) {
+  if (user.is_admin && !user.impersonating) {
     if (menuAdminSlot) {
       const adminLink = document.createElement("a");
       adminLink.id = "admin-link";
@@ -275,6 +290,21 @@ async function onLogout() {
   await fetch("/auth/logout", { method: "POST", credentials: "same-origin" });
   location.href = "/login";
 }
+
+document.getElementById("stop-impersonating-btn")?.addEventListener("click", async () => {
+  try {
+    const res = await fetch("/api/admin/stop-impersonating", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+    });
+    if (!res.ok) throw new Error("Could not return to Admin");
+    location.href = "/admin#users";
+  } catch (err) {
+    alert(err.message || "Could not return to Admin");
+  }
+});
 
 async function bootstrapState() {
   if (location.protocol === "file:") {

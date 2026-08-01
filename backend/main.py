@@ -47,8 +47,8 @@ def health():
 
 
 @app.get("/api/me")
-def me(user=Depends(get_current_user)):
-    return user_to_dict(user)
+def me(request: Request, user=Depends(get_current_user)):
+    return user_to_dict(user, request)
 
 
 @app.get("/api/state")

@@ -1,20 +1,20 @@
 import json
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from . import config
 from .db import User, UserState, get_db, get_setting, set_setting
-from .deps import get_current_user, user_to_dict
+from .deps import get_current_user, is_admin_user, user_to_dict
 from .seed import empty_state, hash_password, verify_password
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
 
 def require_admin(user: User = Depends(get_current_user)) -> User:
-    if user.auth_type != "password" or user.username != config.ADMIN_USERNAME:
+    if not is_admin_user(user):
         raise HTTPException(status_code=403, detail="Admin only")
     return user
 
@@ -31,6 +31,11 @@ class CreateUserBody(BaseModel):
     username: Optional[str] = None
     password: Optional[str] = None
     copy_from_admin: bool = False
+
+
+class ResetPasswordBody(BaseModel):
+    new_password: str = Field(min_length=8)
+    username: Optional[str] = None
 
 
 def _settings_payload(db: Session) -> dict:
@@ -133,7 +138,7 @@ def delete_user(
     user = db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    if user.username == config.ADMIN_USERNAME and user.auth_type == "password":
+    if is_admin_user(user):
         raise HTTPException(status_code=400, detail="Cannot remove the Admin account")
 
     state = db.get(UserState, user.id)
@@ -142,6 +147,93 @@ def delete_user(
     db.delete(user)
     db.commit()
     return {"ok": True}
+
+
+@router.post("/users/{user_id}/impersonate")
+def impersonate_user(
+    user_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    if request.session.get("impersonator_id"):
+        raise HTTPException(status_code=400, detail="Already impersonating — return to Admin first")
+    if user_id == admin.id:
+        raise HTTPException(status_code=400, detail="Cannot log in as yourself")
+
+    target = db.get(User, user_id)
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    if is_admin_user(target):
+        raise HTTPException(status_code=400, detail="Cannot log in as Admin")
+
+    request.session["impersonator_id"] = admin.id
+    request.session["user_id"] = target.id
+    return {"ok": True, "user": user_to_dict(target, request)}
+
+
+@router.post("/stop-impersonating")
+def stop_impersonating(request: Request, db: Session = Depends(get_db)):
+    impersonator_id = request.session.get("impersonator_id")
+    if not impersonator_id:
+        raise HTTPException(status_code=400, detail="Not impersonating")
+
+    admin = db.get(User, impersonator_id)
+    if not admin or not is_admin_user(admin):
+        request.session.clear()
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    request.session.pop("impersonator_id", None)
+    request.session["user_id"] = admin.id
+    return {"ok": True, "user": user_to_dict(admin, request)}
+
+
+@router.post("/users/{user_id}/reset-password")
+def reset_user_password(
+    user_id: int,
+    body: ResetPasswordBody,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    if user_id == admin.id:
+        raise HTTPException(
+            status_code=400,
+            detail="Use Change Admin password for your own account",
+        )
+
+    user = db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if is_admin_user(user):
+        raise HTTPException(status_code=400, detail="Cannot reset Admin via this action")
+
+    new_password = body.new_password.strip()
+    if len(new_password) < 8:
+        raise HTTPException(status_code=400, detail="New password must be at least 8 characters")
+
+    username = (body.username or user.username or "").strip()
+    if not username:
+        raise HTTPException(
+            status_code=400,
+            detail="Username required (this user has no login username yet)",
+        )
+
+    conflict = (
+        db.query(User)
+        .filter(User.username == username, User.id != user.id)
+        .first()
+    )
+    if conflict:
+        raise HTTPException(status_code=400, detail="Username already exists")
+
+    user.username = username
+    user.password_hash = hash_password(new_password)
+    db.commit()
+    return {
+        "ok": True,
+        "user": user_to_dict(user),
+        "username": username,
+    }
 
 
 class ChangePasswordBody(BaseModel):

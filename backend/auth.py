@@ -59,17 +59,13 @@ def _oauth_client_ready(provider: str) -> bool:
 
 @router.post("/login")
 def login(body: LoginBody, request: Request, db: Session = Depends(get_db)):
-    user = (
-        db.query(User)
-        .filter(User.username == body.username.strip(), User.auth_type == "password")
-        .first()
-    )
+    user = db.query(User).filter(User.username == body.username.strip()).first()
     if not user or not user.password_hash or not verify_password(body.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid username or password")
 
     request.session.clear()
     request.session["user_id"] = user.id
-    return {"ok": True, "user": user_to_dict(user)}
+    return {"ok": True, "user": user_to_dict(user, request)}
 
 
 @router.get("/providers")

@@ -191,3 +191,43 @@ def test_team_queue_dashboard_and_notifications(client):
     notifs = client.get("/api/queue/notifications").json()
     assert "items" in notifs
     assert "unread" in notifs
+
+
+def test_impersonate_and_reset_password(client):
+    client.post("/auth/login", json={"username": "admin", "password": "admin"})
+    created = client.post(
+        "/api/admin/users",
+        json={"email": "agent@example.com", "name": "Agent", "auth_type": "oauth"},
+    )
+    assert created.status_code == 200
+    user_id = created.json()["id"]
+
+    reset = client.post(
+        f"/api/admin/users/{user_id}/reset-password",
+        json={"new_password": "agentpass1", "username": "agent1"},
+    )
+    assert reset.status_code == 200
+    assert reset.json()["username"] == "agent1"
+
+    imp = client.post(f"/api/admin/users/{user_id}/impersonate")
+    assert imp.status_code == 200
+    assert imp.json()["user"]["email"] == "agent@example.com"
+
+    me = client.get("/api/me")
+    assert me.status_code == 200
+    assert me.json()["impersonating"] is True
+    assert me.json()["email"] == "agent@example.com"
+    assert me.json()["is_admin"] is False
+
+    # Admin APIs blocked while impersonating
+    assert client.get("/api/admin/users").status_code == 403
+
+    stop = client.post("/api/admin/stop-impersonating")
+    assert stop.status_code == 200
+    assert stop.json()["user"]["is_admin"] is True
+    assert client.get("/api/me").json()["impersonating"] is False
+
+    client.post("/auth/logout")
+    login_user = client.post("/auth/login", json={"username": "agent1", "password": "agentpass1"})
+    assert login_user.status_code == 200
+    assert login_user.json()["user"]["email"] == "agent@example.com"
