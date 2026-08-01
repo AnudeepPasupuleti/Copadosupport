@@ -269,7 +269,7 @@ function showUser(user) {
       const adminLink = document.createElement("a");
       adminLink.id = "admin-link";
       adminLink.className = "menu-item";
-      adminLink.href = "/admin";
+      adminLink.href = "/admin#users";
       adminLink.setAttribute("role", "menuitem");
       adminLink.textContent = "Admin console";
       menuAdminSlot.appendChild(adminLink);
@@ -278,7 +278,7 @@ function showUser(user) {
       const adminNav = document.createElement("a");
       adminNav.id = "admin-nav";
       adminNav.className = "nav-item";
-      adminNav.href = "/admin";
+      adminNav.href = "/admin#users";
       adminNav.innerHTML =
         '<span class="nav-icon" aria-hidden="true">◎</span> Admin';
       sidebarAdminSlot.appendChild(adminNav);

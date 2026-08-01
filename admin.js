@@ -38,18 +38,18 @@ const pageTitle = document.getElementById("page-title");
 const pageDesc = document.getElementById("page-desc");
 
 const PANELS = {
+  users: {
+    title: "Users",
+    desc: "Assign roles, log in as users, or reset passwords.",
+  },
   auth: {
     title: "Authentication",
     desc: "Enable or disable login providers shown on the sign-in page.",
   },
-  users: {
-    title: "Users",
-    desc: "Assign roles (Admin, Manager, Member), log in as users, or reset passwords.",
-  },
 };
 
 function setPanel(name) {
-  const key = PANELS[name] ? name : "auth";
+  const key = PANELS[name] ? name : "users";
   document.querySelectorAll(".admin-nav-btn").forEach((btn) => {
     btn.classList.toggle("is-active", btn.dataset.nav === key);
   });
@@ -198,7 +198,7 @@ document.querySelectorAll(".admin-nav-btn").forEach((btn) => {
 });
 
 window.addEventListener("hashchange", () => {
-  const hash = (location.hash || "#auth").replace("#", "");
+  const hash = (location.hash || "#users").replace("#", "");
   setPanel(hash);
 });
 
@@ -345,7 +345,7 @@ userTableBody.addEventListener("click", async (e) => {
       location.href = "/";
       return;
     }
-    const hash = (location.hash || "#auth").replace("#", "");
+    const hash = (location.hash || "#users").replace("#", "");
     setPanel(hash);
     await loadSettings();
     await loadUsers();
