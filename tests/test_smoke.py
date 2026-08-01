@@ -278,14 +278,10 @@ def test_profile_update_and_password(client):
 
     updated = client.put(
         "/api/me/profile",
-        json={"name": "Support Admin", "picture": "https://example.com/a.png"},
+        json={"name": "Support Admin"},
     )
     assert updated.status_code == 200
     assert updated.json()["name"] == "Support Admin"
-    assert updated.json()["picture"] == "https://example.com/a.png"
-
-    bad_pic = client.put("/api/me/profile", json={"name": "X", "picture": "ftp://nope"})
-    assert bad_pic.status_code == 400
 
     pw = client.post(
         "/api/me/password",

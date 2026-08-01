@@ -185,7 +185,6 @@ async function init() {
   userChip?.addEventListener("click", () => setView("profile"));
   document.getElementById("profile-form")?.addEventListener("submit", onSaveProfile);
   document.getElementById("profile-password-form")?.addEventListener("submit", onSavePassword);
-  document.getElementById("profile-picture")?.addEventListener("input", previewProfilePicture);
   sidebarOpen?.addEventListener("click", openSidebar);
   sidebarClose?.addEventListener("click", closeSidebar);
   sidebarBackdrop?.addEventListener("click", closeSidebar);
@@ -1027,8 +1026,6 @@ function fillProfileForm(user) {
   document.getElementById("profile-name").value = name;
   document.getElementById("profile-email").value = email;
   document.getElementById("profile-username").value = user.username || "—";
-  document.getElementById("profile-auth").value = user.auth_type || "—";
-  document.getElementById("profile-picture").value = user.picture || "";
   setProfileAvatar(user.picture, name || email);
 
   const hasPassword = !!user.has_password;
@@ -1064,12 +1061,6 @@ function setProfileAvatar(url, label) {
   }
 }
 
-function previewProfilePicture() {
-  const url = document.getElementById("profile-picture")?.value.trim() || "";
-  const name = document.getElementById("profile-name")?.value || "";
-  setProfileAvatar(url, name);
-}
-
 async function onSaveProfile(e) {
   e.preventDefault();
   const err = document.getElementById("profile-error");
@@ -1083,7 +1074,6 @@ async function onSaveProfile(e) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: document.getElementById("profile-name").value.trim(),
-        picture: document.getElementById("profile-picture").value.trim(),
       }),
     });
     const data = await res.json().catch(() => ({}));
