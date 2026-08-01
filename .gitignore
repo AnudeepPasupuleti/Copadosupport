@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 .env
 data/app.db
+data/backups/
 .DS_Store
 .pytest_cache/
 .cursor/

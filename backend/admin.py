@@ -165,3 +165,31 @@ def change_password(
     admin.password_hash = hash_password(new_password)
     db.commit()
     return {"ok": True}
+
+
+@router.get("/backup")
+def download_backup(db: Session = Depends(get_db), _admin: User = Depends(require_admin)):
+    """Full DB snapshot (admin only). Use before migrations / deploys."""
+    from datetime import datetime, timezone
+
+    from .db import AppSetting, Notification, TaskComment, TeamTask
+
+    def rows(model):
+        return [
+            {c.name: getattr(obj, c.name) for c in model.__table__.columns}
+            for obj in db.query(model).all()
+        ]
+
+    return {
+        "format": "copado_support_backup_v1",
+        "source": "api",
+        "exported_at": datetime.now(timezone.utc).isoformat(),
+        "tables": {
+            "users": rows(User),
+            "user_state": rows(UserState),
+            "app_settings": rows(AppSetting),
+            "team_tasks": rows(TeamTask),
+            "task_comments": rows(TaskComment),
+            "notifications": rows(Notification),
+        },
+    }

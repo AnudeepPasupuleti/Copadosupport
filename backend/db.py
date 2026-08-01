@@ -126,7 +126,7 @@ def init_db() -> None:
 
 
 def _migrate_sqlite() -> None:
-    if not config.DATABASE_URL.startswith("sqlite"):
+    if engine.dialect.name != "sqlite":
         return
     with engine.begin() as conn:
         cols = {row[1] for row in conn.execute(text("PRAGMA table_info(users)"))}

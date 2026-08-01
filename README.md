@@ -140,3 +140,36 @@ After that, Team Queue and checklists persist across deploys.
 - Seed copies `data/checklist.json` into Admin and User 1 once (per database)
 - After seed, each user’s checklist/diary/history is independent
 - Export / Import JSON backups from the checklist UI (personal state)
+- Admin full backup: `GET /api/admin/backup` (while logged in as Admin)
+
+### Recover local + live into Postgres
+
+**No Render Shell needed** (Shell is paid). Do **not** redeploy while trying to salvage Free SQLite — redeploy wipes it.
+
+1. **Local (already safe)** under `data/backups/`, or:
+   ```bash
+   python scripts/dump_sqlite.py data/app.db -o data/backups/local-dump.json --source local
+   ```
+2. **Live via APIs** (uses Admin login; pulls users + Team Queue + Admin checklist):
+   ```bash
+   python scripts/pull_live_api.py \
+     --base-url https://copadosupport.onrender.com \
+     --admin-password 'YOUR_ADMIN_PASSWORD' \
+     -o data/backups/live-api-dump.json
+   ```
+   If the script reports ~0 tasks / only seed users, live disk was already wiped.
+3. **Each OAuth user’s checklist** (API can’t read other users’ state): on the live site, log in → **⋯ → Export**, save the JSON, then:
+   ```bash
+   python scripts/inject_checklist.py data/backups/live-api-dump.json ~/Downloads/checklist-….json \
+     --email apasupuleti@copado.com
+   ```
+4. After Postgres is linked, merge into Render using the **External** Database URL:
+   ```bash
+   python scripts/restore_backup.py \
+     data/backups/local-dump.json \
+     data/backups/live-api-dump.json \
+     --database-url 'postgresql://…'
+   ```
+   Users match by email; checklist state keeps the newer `updatedAt`; tasks merge by `case_number`.
+
+Admin full backup for later (after Postgres is live): `GET /api/admin/backup` while logged in as Admin.
