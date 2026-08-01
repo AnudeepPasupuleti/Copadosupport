@@ -118,9 +118,25 @@ Production (or any non-localhost `https` `BASE_URL`) **refuses to start** if `SE
 - Start: `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`
 - Register production callback URLs for GitHub and Google to match `BASE_URL`
 
+### Render + PostgreSQL (recommended — data survives redeploys)
+
+SQLite on Render Free is wiped on every deploy. Use Postgres instead:
+
+1. In Render: **New → PostgreSQL** (Free is fine for testing; note free DBs may expire after ~30 days).
+2. Open the Postgres service → copy **Internal Database URL** (or External if needed).
+3. On your **Web Service** → **Environment**:
+   - `DATABASE_URL` = that Postgres URL (paste as-is; `postgres://` is normalized automatically)
+   - Keep `BASE_URL=https://copadosupport.onrender.com` (or your URL)
+4. **Remove** any old `DATABASE_URL=sqlite:///…` from the web service.
+5. Redeploy the web service. Tables are created on startup; Admin/users seed into Postgres.
+6. Link the DB to the web service (Render “Connect” / same account region) so Internal URL resolves.
+
+After that, Team Queue and checklists persist across deploys.
+
 ## Data
 
-- SQLite database: `data/app.db`
-- Seed copies `data/checklist.json` into Admin and User 1 once
+- **Local:** SQLite file `data/app.db` (default)
+- **Production (Render):** PostgreSQL via `DATABASE_URL`
+- Seed copies `data/checklist.json` into Admin and User 1 once (per database)
 - After seed, each user’s checklist/diary/history is independent
-- Export / Import JSON backups from the checklist UI
+- Export / Import JSON backups from the checklist UI (personal state)

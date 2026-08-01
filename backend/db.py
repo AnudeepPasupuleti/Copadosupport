@@ -115,6 +115,7 @@ class Notification(Base):
 engine = create_engine(
     config.DATABASE_URL,
     connect_args={"check_same_thread": False} if config.DATABASE_URL.startswith("sqlite") else {},
+    pool_pre_ping=not config.DATABASE_URL.startswith("sqlite"),
 )
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 

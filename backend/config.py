@@ -14,11 +14,27 @@ GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID", "")
 GITHUB_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET", "")
 SESSION_SECRET = os.getenv("SESSION_SECRET", "dev-session-secret-change-me")
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8080").rstrip("/")
-DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{ROOT / 'data' / 'app.db'}")
 CHECKLIST_SEED_PATH = ROOT / "data" / "checklist.json"
 USER1_EMAIL = os.getenv("USER1_EMAIL", "apasupuleti@copado.com")
 USER1_GITHUB_LOGIN = os.getenv("USER1_GITHUB_LOGIN", "")
 ENV = os.getenv("ENV", os.getenv("ENVIRONMENT", "development")).lower()
+
+
+def normalize_database_url(url: str) -> str:
+    """Render/Heroku use postgres://; SQLAlchemy + psycopg need postgresql+psycopg://."""
+    value = (url or "").strip()
+    if not value:
+        return f"sqlite:///{ROOT / 'data' / 'app.db'}"
+    if value.startswith("postgres://"):
+        value = "postgresql://" + value[len("postgres://") :]
+    if value.startswith("postgresql://") and "+psycopg" not in value and "+psycopg2" not in value:
+        value = "postgresql+psycopg://" + value[len("postgresql://") :]
+    return value
+
+
+DATABASE_URL = normalize_database_url(
+    os.getenv("DATABASE_URL", f"sqlite:///{ROOT / 'data' / 'app.db'}")
+)
 
 WEAK_SESSION_SECRETS = {
     "",
