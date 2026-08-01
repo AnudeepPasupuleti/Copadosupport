@@ -224,6 +224,12 @@ def test_user_roles(client):
     )
     assert bad.status_code == 400
 
+    status = client.get("/api/admin/status")
+    assert status.status_code == 200
+    body = status.json()
+    assert body["user_count"] >= 2
+    assert "dialect" in body
+
 
 def test_impersonate_and_reset_password(client):
     client.post("/auth/login", json={"username": "admin", "password": "admin"})

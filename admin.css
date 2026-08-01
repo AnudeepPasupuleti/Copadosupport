@@ -478,6 +478,8 @@ body.admin-shell input {
 /* Table */
 .users-table-wrap {
   overflow-x: auto;
+  overflow-y: auto;
+  max-height: min(70vh, 640px);
 }
 
 .users-table {

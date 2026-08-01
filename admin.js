@@ -90,9 +90,24 @@ async function loadSettings() {
 }
 
 async function loadUsers() {
+  const statusEl = document.getElementById("users-db-status");
+  let status = null;
+  try {
+    status = await api("/api/admin/status");
+    if (statusEl) {
+      statusEl.textContent = `Database: ${status.dialect} · ${status.db_host || "local"}/${status.db_name || "—"} · ${status.user_count} users (${status.roles?.admin || 0} admin, ${status.roles?.manager || 0} manager, ${status.roles?.member || 0} member) · ${status.ticket_count} tickets`;
+    }
+  } catch (err) {
+    if (statusEl) statusEl.textContent = "Could not read database status.";
+  }
+
   const users = await api("/api/admin/users");
   if (!Array.isArray(users)) {
     throw new Error("Could not load users");
+  }
+
+  if (status && status.user_count !== users.length && statusEl) {
+    statusEl.textContent += ` — warning: status count ${status.user_count} ≠ list ${users.length}`;
   }
 
   userTableBody.innerHTML = "";

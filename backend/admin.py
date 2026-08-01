@@ -83,6 +83,29 @@ def list_users(db: Session = Depends(get_db), _admin: User = Depends(require_adm
     return [user_to_dict(u) for u in users]
 
 
+@router.get("/status")
+def admin_status(db: Session = Depends(get_db), _admin: User = Depends(require_admin)):
+    """Helps confirm Admin is reading the expected database."""
+    from urllib.parse import urlparse
+
+    from .db import TeamTask, UserState, engine
+
+    parsed = urlparse(config.DATABASE_URL)
+    host = parsed.hostname or ""
+    return {
+        "dialect": engine.dialect.name,
+        "db_host": host,
+        "db_name": (parsed.path or "").lstrip("/") or None,
+        "user_count": db.query(User).count(),
+        "user_state_count": db.query(UserState).count(),
+        "ticket_count": db.query(TeamTask).count(),
+        "roles": {
+            role: db.query(User).filter(User.role == role).count()
+            for role in ("admin", "manager", "member")
+        },
+    }
+
+
 @router.post("/users")
 def create_user(
     body: CreateUserBody,
