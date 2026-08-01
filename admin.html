@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin — Checklist</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/admin.css?v=2" />
+  </head>
+  <body class="admin-shell">
+    <div class="admin-layout">
+      <aside class="admin-sidebar">
+        <div class="admin-brand">
+          <p class="admin-brand-label">Console</p>
+          <p class="admin-brand-title">Checklist Admin</p>
+        </div>
+
+        <nav class="admin-nav" aria-label="Admin">
+          <button type="button" class="admin-nav-btn is-active" data-nav="auth" id="nav-auth">
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <rect x="3" y="11" width="18" height="11" rx="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            Authentication
+          </button>
+          <button type="button" class="admin-nav-btn" data-nav="users" id="nav-users">
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+            Users
+            <span class="admin-nav-count" id="nav-user-count" hidden>0</span>
+          </button>
+        </nav>
+
+        <div class="admin-sidebar-footer">
+          <a class="admin-back-link" href="/">← Back to app</a>
+        </div>
+      </aside>
+
+      <div class="admin-main">
+        <header class="admin-topbar">
+          <p class="admin-topbar-kicker" id="page-kicker">Administration</p>
+          <h1 class="admin-topbar-title" id="page-title">Authentication</h1>
+          <p class="admin-topbar-desc" id="page-desc">
+            Enable or disable login providers shown on the sign-in page.
+          </p>
+        </header>
+
+        <div class="admin-content">
+          <section class="admin-panel is-active" id="panel-auth" data-panel="auth">
+            <div class="admin-card">
+              <div class="admin-card-header">
+                <h2 class="admin-card-title">Login providers</h2>
+              </div>
+              <div class="admin-card-body">
+                <div class="provider-row">
+                  <div class="provider-info">
+                    <div class="provider-name-row">
+                      <p class="provider-name">Google login</p>
+                      <span class="badge" id="google-badge">…</span>
+                    </div>
+                    <p class="provider-meta" id="google-meta">Loading…</p>
+                  </div>
+                  <label class="toggle" title="Enable Google login">
+                    <input type="checkbox" id="google-enabled" />
+                    <span class="toggle-ui"></span>
+                  </label>
+                </div>
+                <div class="provider-row">
+                  <div class="provider-info">
+                    <div class="provider-name-row">
+                      <p class="provider-name">GitHub login</p>
+                      <span class="badge" id="github-badge">…</span>
+                    </div>
+                    <p class="provider-meta" id="github-meta">Loading…</p>
+                  </div>
+                  <label class="toggle" title="Enable GitHub login">
+                    <input type="checkbox" id="github-enabled" />
+                    <span class="toggle-ui"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="admin-card" style="margin-top: 1rem">
+              <div class="admin-card-header">
+                <h2 class="admin-card-title">Change Admin password</h2>
+              </div>
+              <form id="change-password-form" class="users-toolbar">
+                <div class="field field-grow">
+                  <label class="field-label" for="current-password">Current password</label>
+                  <input class="field-input" type="password" id="current-password" required autocomplete="current-password" />
+                </div>
+                <div class="field field-grow">
+                  <label class="field-label" for="new-password">New password</label>
+                  <input class="field-input" type="password" id="new-password" required minlength="8" autocomplete="new-password" />
+                </div>
+                <button type="submit" class="btn btn-primary">Update password</button>
+              </form>
+              <p class="admin-error" id="password-error" hidden></p>
+              <p class="provider-meta" id="password-success" hidden style="padding: 0.75rem 1.15rem; color: #15803d">
+                Password updated.
+              </p>
+            </div>
+          </section>
+
+          <section class="admin-panel" id="panel-users" data-panel="users">
+            <div class="admin-card">
+              <div class="admin-card-header">
+                <h2 class="admin-card-title">User directory</h2>
+              </div>
+              <form id="add-user-form" class="users-toolbar">
+                <div class="field field-grow">
+                  <label class="field-label" for="new-email">Email</label>
+                  <input
+                    class="field-input"
+                    type="email"
+                    id="new-email"
+                    placeholder="user@company.com"
+                    required
+                    autocomplete="off"
+                  />
+                </div>
+                <div class="field field-grow">
+                  <label class="field-label" for="new-name">Name</label>
+                  <input
+                    class="field-input"
+                    type="text"
+                    id="new-name"
+                    placeholder="Optional"
+                    autocomplete="off"
+                  />
+                </div>
+                <label class="field-check">
+                  <input type="checkbox" id="copy-admin" />
+                  Copy Admin checklist
+                </label>
+                <button type="submit" class="btn btn-primary">Add user</button>
+              </form>
+              <p class="admin-error" id="admin-error" hidden></p>
+              <div class="users-table-wrap">
+                <table class="users-table" id="users-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Type</th>
+                      <th>Role</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="user-table-body"></tbody>
+                </table>
+                <p class="users-empty" id="users-empty" hidden>No users found.</p>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+    <script src="/admin.js?v=2"></script>
+  </body>
+</html>

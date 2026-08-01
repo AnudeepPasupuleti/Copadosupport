@@ -1,0 +1,514 @@
+{
+  "activeDate": "2026-07-19",
+  "items": [
+    {
+      "id": "0e54459c-48f2-469e-ab5d-bba64cf3239a",
+      "text": "Data deployment case",
+      "checked": true,
+      "checkedAt": 1784477421149,
+      "createdAt": 1784477411812,
+      "addedOn": "2026-07-02",
+      "carriedFrom": "2026-07-02"
+    },
+    {
+      "id": "36153a2f-fa65-485b-8fcc-21146a78b5d5",
+      "text": "jwt authentication",
+      "checked": true,
+      "checkedAt": 1784477418703,
+      "createdAt": 1784477411812,
+      "addedOn": "2026-07-01",
+      "carriedFrom": "2026-07-02"
+    },
+    {
+      "id": "3234f632-4f99-4ae3-a985-11d427189e38",
+      "text": "Rens case",
+      "checked": false,
+      "checkedAt": null,
+      "createdAt": 1784477411812,
+      "addedOn": "2026-07-03",
+      "carriedFrom": "2026-07-03"
+    },
+    {
+      "id": "4ff2d636-7c62-4cb5-bd9f-9cef151fcf53",
+      "text": "Srinja's Case check in Slack",
+      "checked": true,
+      "checkedAt": 1784477425020,
+      "createdAt": 1784477411812,
+      "addedOn": "2026-07-06",
+      "carriedFrom": "2026-07-06"
+    }
+  ],
+  "history": [
+    {
+      "date": "2026-07-06",
+      "items": [
+        {
+          "id": "6243b6c0-800f-418b-b6d5-b6a35e7b27d4",
+          "text": "Data deployment case",
+          "checked": false,
+          "checkedAt": null,
+          "addedOn": "2026-07-02",
+          "carriedFrom": "2026-07-02",
+          "rolledOver": true
+        },
+        {
+          "id": "ad7c39f8-9b37-46a0-9d44-3b6a9bba3551",
+          "text": "jwt authentication",
+          "checked": false,
+          "checkedAt": null,
+          "addedOn": "2026-07-01",
+          "carriedFrom": "2026-07-02",
+          "rolledOver": true
+        },
+        {
+          "id": "b9824e7e-78d2-402d-8be2-0c66dd21d51f",
+          "text": "Rens case",
+          "checked": false,
+          "checkedAt": null,
+          "addedOn": "2026-07-03",
+          "carriedFrom": "2026-07-03",
+          "rolledOver": true
+        },
+        {
+          "id": "f3a40e7e-511f-41f9-a452-a3109d3d2764",
+          "text": "Workday Repositry oauth connection and uninstall oauth to see if it is impacting",
+          "checked": true,
+          "checkedAt": 1783304392448,
+          "addedOn": "2026-07-03",
+          "carriedFrom": "2026-07-03",
+          "rolledOver": false
+        },
+        {
+          "id": "9126d392-8d96-4cee-b9f9-42f78765c8af",
+          "text": "Kirti Userstory",
+          "checked": true,
+          "checkedAt": 1783304093242,
+          "addedOn": "2026-07-04",
+          "carriedFrom": "2026-07-04",
+          "rolledOver": false
+        },
+        {
+          "id": "32b8e982-959c-4db8-b229-346a20b1e095",
+          "text": "Respond to all my cases",
+          "checked": true,
+          "checkedAt": 1783332583044,
+          "addedOn": "2026-07-04",
+          "carriedFrom": "2026-07-04",
+          "rolledOver": false
+        },
+        {
+          "id": "0859fef2-e90b-4304-9354-d6ee9baf37e5",
+          "text": "Srinja's Case check in Slack",
+          "checked": false,
+          "checkedAt": null,
+          "addedOn": "2026-07-06",
+          "carriedFrom": null,
+          "rolledOver": true
+        }
+      ],
+      "summary": {
+        "total": 7,
+        "completed": 3,
+        "incomplete": 4,
+        "rolledOver": 4
+      }
+    },
+    {
+      "date": "2026-07-05",
+      "items": [
+        {
+          "id": "ccf0fce9-1a8a-4bc5-b249-922a47d21a85",
+          "text": "Data deployment case",
+          "checked": false,
+          "checkedAt": null,
+          "addedOn": "2026-07-02",
+          "carriedFrom": "2026-07-02",
+          "rolledOver": true
+        },
+        {
+          "id": "a3801c6e-3bf7-4325-9227-027d66581352",
+          "text": "jwt authentication",
+          "checked": false,
+          "checkedAt": null,
+          "addedOn": "2026-07-01",
+          "carriedFrom": "2026-07-02",
+          "rolledOver": true
+        },
+        {
+          "id": "6ab66dbd-df66-4fb0-941e-616d5424df92",
+          "text": "Rens case",
+          "checked": false,
+          "checkedAt": null,
+          "addedOn": "2026-07-03",
+          "carriedFrom": "2026-07-03",
+          "rolledOver": true
+        },
+        {
+          "id": "0819c747-ff8f-49a4-928a-9ee99c281b57",
+          "text": "Workday Repositry oauth connection and uninstall oauth to see if it is impacting",
+          "checked": false,
+          "checkedAt": null,
+          "addedOn": "2026-07-03",
+          "carriedFrom": "2026-07-03",
+          "rolledOver": true
+        },
+        {
+          "id": "f26c5ca1-e9c9-447d-af63-336fb3a345b6",
+          "text": "Kirti Userstory",
+          "checked": false,
+          "checkedAt": null,
+          "addedOn": "2026-07-04",
+          "carriedFrom": "2026-07-04",
+          "rolledOver": true
+        },
+        {
+          "id": "4bab2d0c-5d37-46cc-a31a-5277b6bba590",
+          "text": "Respond to all my cases",
+          "checked": false,
+          "checkedAt": null,
+          "addedOn": "2026-07-04",
+          "carriedFrom": "2026-07-04",
+          "rolledOver": true
+        }
+      ],
+      "summary": {
+        "total": 6,
+        "completed": 0,
+        "incomplete": 6,
+        "rolledOver": 6
+      }
+    },
+    {
+      "date": "2026-07-04",
+      "items": [
+        {
+          "id": "7d9688bc-ae26-4850-919f-be276472de98",
+          "text": "Nicole flow acceses case",
+          "checked": true,
+          "checkedAt": 1783150732473,
+          "addedOn": "2026-07-03",
+          "carriedFrom": "2026-07-03",
+          "rolledOver": false
+        },
+        {
+          "id": "697f3ba8-d848-4093-b8af-a0143fa9ce34",
+          "text": "Data deployment case",
+          "checked": false,
+          "checkedAt": null,
+          "addedOn": "2026-07-02",
+          "carriedFrom": "2026-07-02",
+          "rolledOver": true
+        },
+        {
+          "id": "9e6679af-e788-4ec4-823e-5387e5b93948",
+          "text": "jwt authentication",
+          "checked": false,
+          "checkedAt": null,
+          "addedOn": "2026-07-01",
+          "carriedFrom": "2026-07-02",
+          "rolledOver": true
+        },
+        {
+          "id": "b9dd3b8f-2446-4575-a8a7-56b76e61fc1f",
+          "text": "Rens case",
+          "checked": false,
+          "checkedAt": null,
+          "addedOn": "2026-07-03",
+          "carriedFrom": "2026-07-03",
+          "rolledOver": true
+        },
+        {
+          "id": "f074907f-c5fd-4687-b5a9-e3eefdbb76ce",
+          "text": "Workday Repositry oauth connection and uninstall oauth to see if it is impacting",
+          "checked": false,
+          "checkedAt": null,
+          "addedOn": "2026-07-03",
+          "carriedFrom": "2026-07-03",
+          "rolledOver": true
+        },
+        {
+          "id": "6e966d34-36a6-463a-9715-cccdc2ffcce7",
+          "text": "dude, can you test the pull request again in your org, US-0625665",
+          "checked": true,
+          "checkedAt": 1783147484224,
+          "addedOn": "2026-07-03",
+          "carriedFrom": "2026-07-03",
+          "rolledOver": false
+        },
+        {
+          "id": "557a031b-1179-4b66-96cb-66d392a4cfe3",
+          "text": "Karan case response",
+          "checked": true,
+          "checkedAt": 1783131725065,
+          "addedOn": "2026-07-04",
+          "carriedFrom": null,
+          "rolledOver": false
+        },
+        {
+          "id": "7d9aecce-075f-4720-a13d-184894becf2c",
+          "text": "Kirti Userstory",
+          "checked": false,
+          "checkedAt": null,
+          "addedOn": "2026-07-04",
+          "carriedFrom": null,
+          "rolledOver": true
+        },
+        {
+          "id": "a5e7be33-a5e6-4a80-8012-bd71c10d8810",
+          "text": "Respond to all my cases",
+          "checked": false,
+          "checkedAt": null,
+          "addedOn": "2026-07-04",
+          "carriedFrom": null,
+          "rolledOver": true
+        }
+      ],
+      "summary": {
+        "total": 9,
+        "completed": 3,
+        "incomplete": 6,
+        "rolledOver": 6
+      }
+    },
+    {
+      "date": "2026-07-03",
+      "items": [
+        {
+          "id": "64513f2d-0a9e-4f9f-a7cc-fc228ddc0671",
+          "text": "Goutham's case of taru agarwal",
+          "checked": true,
+          "checkedAt": 1783036141827,
+          "addedOn": "2026-07-03",
+          "carriedFrom": null,
+          "rolledOver": false
+        },
+        {
+          "id": "15ea6162-684d-4587-89d9-bba1d9bc01f5",
+          "text": "Humana case",
+          "checked": true,
+          "checkedAt": 1783063714293,
+          "addedOn": "2026-07-01",
+          "carriedFrom": "2026-07-02",
+          "rolledOver": false
+        },
+        {
+          "id": "3d38287d-2a52-483f-bc57-208613d03334",
+          "text": "Nicole flow acceses case",
+          "checked": false,
+          "checkedAt": null,
+          "addedOn": "2026-07-03",
+          "carriedFrom": null,
+          "rolledOver": true
+        },
+        {
+          "id": "0bee43ae-c7f7-422a-955c-1a23614d887e",
+          "text": "Data deployment case",
+          "checked": false,
+          "checkedAt": null,
+          "addedOn": "2026-07-02",
+          "carriedFrom": "2026-07-02",
+          "rolledOver": true
+        },
+        {
+          "id": "eecd6b16-cfc5-4585-8623-f2069e33db80",
+          "text": "jwt authentication",
+          "checked": false,
+          "checkedAt": null,
+          "addedOn": "2026-07-01",
+          "carriedFrom": "2026-07-02",
+          "rolledOver": true
+        },
+        {
+          "id": "7e447b18-a6b6-420d-b926-f000dba03fbc",
+          "text": "Rens case",
+          "checked": false,
+          "checkedAt": null,
+          "addedOn": "2026-07-03",
+          "carriedFrom": null,
+          "rolledOver": true
+        },
+        {
+          "id": "3c45d970-850e-474e-9ec0-5f9ac3ef24f4",
+          "text": "connect with Karan",
+          "checked": true,
+          "checkedAt": 1783025152176,
+          "addedOn": "2026-07-03",
+          "carriedFrom": null,
+          "rolledOver": false
+        },
+        {
+          "id": "17399c8b-a78a-42f4-b65d-074d2538de05",
+          "text": "Connect with Deepti",
+          "checked": true,
+          "checkedAt": 1783024328850,
+          "addedOn": "2026-07-02",
+          "carriedFrom": "2026-07-02",
+          "rolledOver": false
+        },
+        {
+          "id": "7a09bd80-37b5-4f9c-8e3e-fa8531190ce8",
+          "text": "Workday Repositry oauth connection and uninstall oauth to see if it is impacting",
+          "checked": false,
+          "checkedAt": null,
+          "addedOn": "2026-07-03",
+          "carriedFrom": null,
+          "rolledOver": true
+        },
+        {
+          "id": "27c6f5d6-845a-4f55-b06c-43561678cc8d",
+          "text": "dude, can you test the pull request again in your org, US-0625665",
+          "checked": false,
+          "checkedAt": null,
+          "addedOn": "2026-07-03",
+          "carriedFrom": null,
+          "rolledOver": true
+        },
+        {
+          "id": "7241af86-8a7f-4f18-ba58-ab8cba3971c4",
+          "text": "Connect with Shaunak for Persona management case",
+          "checked": true,
+          "checkedAt": 1783065276380,
+          "addedOn": "2026-07-03",
+          "carriedFrom": null,
+          "rolledOver": false
+        }
+      ],
+      "summary": {
+        "total": 11,
+        "completed": 5,
+        "incomplete": 6,
+        "rolledOver": 6
+      }
+    },
+    {
+      "date": "2026-07-02",
+      "summary": {
+        "total": 5,
+        "completed": 1,
+        "incomplete": 4,
+        "rolledOver": 4
+      },
+      "items": [
+        {
+          "id": "h2-1",
+          "text": "Humana case",
+          "checked": false,
+          "checkedAt": null,
+          "addedOn": "2026-07-01",
+          "carriedFrom": "2026-07-01",
+          "rolledOver": true
+        },
+        {
+          "id": "h2-2",
+          "text": "jwt authentication",
+          "checked": false,
+          "checkedAt": null,
+          "addedOn": "2026-07-01",
+          "carriedFrom": "2026-07-01",
+          "rolledOver": true
+        },
+        {
+          "id": "h2-3",
+          "text": "Data deployment case",
+          "checked": false,
+          "checkedAt": null,
+          "addedOn": "2026-07-02",
+          "carriedFrom": null,
+          "rolledOver": true
+        },
+        {
+          "id": "h2-4",
+          "text": "Connect with Deepti",
+          "checked": false,
+          "checkedAt": null,
+          "addedOn": "2026-07-02",
+          "carriedFrom": null,
+          "rolledOver": true
+        },
+        {
+          "id": "h2-5",
+          "text": "Review support queue",
+          "checked": true,
+          "checkedAt": 1782940800000,
+          "addedOn": "2026-07-02",
+          "carriedFrom": null,
+          "rolledOver": false
+        }
+      ]
+    },
+    {
+      "date": "2026-07-01",
+      "summary": {
+        "total": 4,
+        "completed": 2,
+        "incomplete": 2,
+        "rolledOver": 2
+      },
+      "items": [
+        {
+          "id": "h1-1",
+          "text": "Humana case",
+          "checked": false,
+          "checkedAt": null,
+          "addedOn": "2026-07-01",
+          "carriedFrom": null,
+          "rolledOver": true
+        },
+        {
+          "id": "h1-2",
+          "text": "jwt authentication",
+          "checked": false,
+          "checkedAt": null,
+          "addedOn": "2026-07-01",
+          "carriedFrom": null,
+          "rolledOver": true
+        },
+        {
+          "id": "h1-3",
+          "text": "Clear morning inbox",
+          "checked": true,
+          "checkedAt": 1782854400000,
+          "addedOn": "2026-07-01",
+          "carriedFrom": null,
+          "rolledOver": false
+        },
+        {
+          "id": "h1-4",
+          "text": "Log time entries",
+          "checked": true,
+          "checkedAt": 1782879600000,
+          "addedOn": "2026-07-01",
+          "carriedFrom": null,
+          "rolledOver": false
+        }
+      ]
+    }
+  ],
+  "diary": [
+    {
+      "id": "9832a348-e925-452b-a6e2-fa654820b10c",
+      "text": "attended the call for eci and solved the issue in 5 minutes",
+      "createdAt": 1784477448959,
+      "date": "2026-07-19"
+    },
+    {
+      "id": "8fd7cd6c-ceac-4833-b8c2-41817e23fd5e",
+      "text": "Taking An Interview for as interviewer and it is my 4th interview in ths month",
+      "createdAt": 1783332645373,
+      "date": "2026-07-06"
+    },
+    {
+      "id": "64dc5bb2-db3f-418d-893b-9ea80b44b8f2",
+      "text": "Went on a call for 00168080 for karan case and troubleshoot and found the root cause and responded to the customer with all the information",
+      "createdAt": 1783127973703,
+      "date": "2026-07-04"
+    },
+    {
+      "id": "dd6cc3ce-3516-4df0-ac45-8f81ea2d2692",
+      "text": "00168603 Troubleshot and helped the customer to resolve the issue and unblocked the customer immediately when they were blocked for production release. Attended internal troubleshooting call and went to the customer call out of my work hours to unblock the customer",
+      "createdAt": 1783022043213,
+      "date": "2026-07-03"
+    }
+  ],
+  "updatedAt": 1784477448959
+}

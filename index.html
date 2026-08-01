@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Copado Support</title>
+    <script>
+      try {
+        if (localStorage.getItem("checklist-theme") === "dark") {
+          document.documentElement.setAttribute("data-theme", "dark");
+        }
+      } catch (_) {}
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="shell-body">
+    <div class="app-shell">
+      <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+        <div class="sidebar-brand">
+          <span class="sidebar-logo" aria-hidden="true">C</span>
+          <div class="sidebar-brand-text">
+            <span class="sidebar-product">copado</span>
+            <span class="sidebar-product-sub">Support</span>
+          </div>
+          <button type="button" class="sidebar-close" id="sidebar-close" aria-label="Close menu">×</button>
+        </div>
+
+        <nav class="sidebar-nav">
+          <p class="sidebar-section-label">General</p>
+          <button type="button" class="nav-item" data-nav="dashboard" data-view="dashboard">
+            <span class="nav-icon" aria-hidden="true">▦</span>
+            Dashboard
+          </button>
+          <button type="button" class="nav-item is-active" data-nav="today" data-view="today">
+            <span class="nav-icon" aria-hidden="true">☑</span>
+            My Tasks
+          </button>
+          <button type="button" class="nav-item" data-nav="diary" data-view="diary">
+            <span class="nav-icon" aria-hidden="true">✎</span>
+            Diary
+          </button>
+          <button type="button" class="nav-item" data-nav="history" data-view="history">
+            <span class="nav-icon" aria-hidden="true">◷</span>
+            History
+          </button>
+          <button type="button" class="nav-item" data-nav="queue" data-view="queue">
+            <span class="nav-icon" aria-hidden="true">☰</span>
+            Team Queue
+          </button>
+          <button type="button" class="nav-item" data-nav="calendar" data-stub="true">
+            <span class="nav-icon" aria-hidden="true">▦</span>
+            Calendar
+            <span class="nav-soon">Soon</span>
+          </button>
+          <button type="button" class="nav-item" data-nav="reports" data-stub="true">
+            <span class="nav-icon" aria-hidden="true">▥</span>
+            Reports
+            <span class="nav-soon">Soon</span>
+          </button>
+
+          <p class="sidebar-section-label">Admin</p>
+          <div id="sidebar-admin-slot"></div>
+          <button type="button" class="nav-item" data-nav="settings" data-stub="true">
+            <span class="nav-icon" aria-hidden="true">⚙</span>
+            Settings
+            <span class="nav-soon">Soon</span>
+          </button>
+        </nav>
+      </aside>
+
+      <div class="sidebar-backdrop" id="sidebar-backdrop" hidden></div>
+
+      <div class="shell-main">
+        <header class="topbar">
+          <button type="button" class="menu-burger" id="sidebar-open" aria-label="Open menu">
+            <span aria-hidden="true">☰</span>
+          </button>
+          <div class="topbar-title-block">
+            <h1 class="page-title" id="page-title">My Tasks</h1>
+            <p class="page-subtitle" id="date-label"></p>
+          </div>
+          <div class="topbar-actions">
+            <label class="topbar-search">
+              <span class="visually-hidden">Search</span>
+              <input
+                type="search"
+                id="search-input"
+                class="search-input"
+                placeholder="Search tasks & diary…"
+                autocomplete="off"
+              />
+            </label>
+            <div class="notif-wrap">
+              <button type="button" class="topbar-icon-btn" id="notif-btn" title="Notifications" aria-label="Notifications" aria-expanded="false" aria-controls="notif-panel">
+                <span aria-hidden="true">🔔</span>
+                <span class="notif-badge" id="notif-badge" hidden>0</span>
+              </button>
+              <div class="notif-panel" id="notif-panel" hidden role="menu">
+                <div class="notif-panel-head">
+                  <strong>Notifications</strong>
+                  <button type="button" class="text-action" id="notif-mark-all">Mark all read</button>
+                </div>
+                <ul class="notif-list" id="notif-list"></ul>
+                <p class="notif-empty" id="notif-empty">No notifications yet.</p>
+              </div>
+            </div>
+            <div class="user-chip" id="user-chip" hidden>
+              <img class="user-avatar" id="user-avatar" alt="" hidden />
+              <span class="user-name" id="user-name"></span>
+            </div>
+            <div class="menu-wrap">
+              <button
+                type="button"
+                class="menu-trigger"
+                id="menu-btn"
+                aria-haspopup="true"
+                aria-expanded="false"
+                aria-controls="app-menu"
+                title="Account"
+              >
+                <span aria-hidden="true">⋯</span>
+                <span class="visually-hidden">More options</span>
+              </button>
+              <div class="app-menu" id="app-menu" hidden role="menu">
+                <button type="button" class="menu-item" id="theme-btn" role="menuitem">Theme: Dark</button>
+                <button type="button" class="menu-item" id="remind-btn" role="menuitem" hidden>Reminders</button>
+                <button type="button" class="menu-item" id="export-btn" role="menuitem">Export</button>
+                <button type="button" class="menu-item" id="import-btn" role="menuitem">Import</button>
+                <div id="menu-admin-slot"></div>
+                <button type="button" class="menu-item menu-item-danger" id="logout-btn" role="menuitem">Sign out</button>
+              </div>
+            </div>
+            <input type="file" id="import-file" accept=".json,application/json" hidden />
+          </div>
+        </header>
+
+        <div class="shell-content">
+          <div class="content-toolbar" id="tasks-toolbar">
+            <div class="tag-filters" role="group" aria-label="Filter by list">
+              <button type="button" class="tag-filter is-active" data-tag="">All</button>
+              <button type="button" class="tag-filter" data-tag="work">Work</button>
+              <button type="button" class="tag-filter" data-tag="personal">Personal</button>
+            </div>
+          </div>
+
+          <p class="sync-status" id="sync-status" hidden></p>
+          <p class="storage-warning" id="storage-warning" hidden></p>
+
+          <div id="today-view">
+            <section class="rollover-banner" id="rollover-banner" hidden>
+              <span class="rollover-icon" aria-hidden="true">↪</span>
+              <p id="rollover-text"></p>
+            </section>
+
+            <section class="progress-strip" id="progress-card" hidden aria-label="Checklist progress">
+              <div class="progress-strip-top">
+                <p class="progress-label" id="progress-label">0 of 0 done</p>
+                <span class="progress-percent" id="progress-percent">0%</span>
+              </div>
+              <div class="progress-bar-track" aria-hidden="true">
+                <div class="progress-bar-fill" id="progress-bar-fill"></div>
+              </div>
+              <p class="progress-hint visually-hidden" id="progress-hint">Tap any item to check it off</p>
+            </section>
+
+            <section class="completion-banner" id="completion-banner" hidden>
+              <span class="completion-icon" aria-hidden="true">✓</span>
+              <p>All done for today</p>
+              <button type="button" class="btn-text" id="reset-all">Uncheck all</button>
+            </section>
+
+            <div class="today-layout">
+              <main class="main">
+                <div class="checklist-panel" aria-label="Today's checklist">
+                  <div class="panel-actions" id="panel-actions" hidden>
+                    <button type="button" class="text-action" id="check-all">Check all</button>
+                    <button type="button" class="text-action" id="toggle-completed">
+                      <span id="toggle-completed-label">Hide checked</span>
+                    </button>
+                    <button type="button" class="text-action danger" id="clear-checked" hidden>Clear checked</button>
+                  </div>
+
+                  <ul class="checklist" id="checklist" aria-live="polite"></ul>
+
+                  <div class="empty-state" id="empty-state">
+                    <p class="empty-title">Nothing for today</p>
+                    <p class="empty-hint">Add an item below. History fills in after the day rolls over.</p>
+                  </div>
+
+                  <form class="add-row" id="add-form" autocomplete="off">
+                    <div class="add-main">
+                      <span class="add-icon" aria-hidden="true">+</span>
+                      <input
+                        type="text"
+                        id="item-input"
+                        class="add-input"
+                        placeholder="Add an item…"
+                        maxlength="200"
+                        aria-label="Add checklist item"
+                      />
+                      <button type="button" class="details-toggle" id="details-toggle" aria-expanded="false">
+                        Details
+                      </button>
+                    </div>
+                    <div class="add-meta" id="add-details" hidden>
+                      <select id="add-priority" class="add-select" aria-label="Priority" title="Priority">
+                        <option value="">Priority</option>
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                      </select>
+                      <select id="add-tag" class="add-select" aria-label="List" title="List">
+                        <option value="">List</option>
+                        <option value="work">Work</option>
+                        <option value="personal">Personal</option>
+                      </select>
+                      <input type="date" id="add-due" class="add-date" aria-label="Due date" title="Due date" />
+                    </div>
+                  </form>
+                </div>
+              </main>
+
+              <section class="diary-section" aria-label="Personal diary">
+                <div class="diary-panel">
+                  <div class="diary-header">
+                    <h2 class="diary-title">Diary</h2>
+                    <p class="diary-subtitle">Quick notes for today</p>
+                  </div>
+                  <form class="diary-form" id="diary-form">
+                    <textarea
+                      id="diary-input"
+                      class="diary-textarea"
+                      placeholder="What's on your mind?"
+                      rows="3"
+                      maxlength="5000"
+                      aria-label="Diary entry"
+                    ></textarea>
+                    <div class="diary-form-actions">
+                      <span class="diary-hint">⌘ Enter to save</span>
+                      <button type="submit" class="btn btn-primary">Save</button>
+                    </div>
+                  </form>
+                  <ul class="diary-entries" id="diary-entries-today" aria-live="polite"></ul>
+                  <div class="empty-state diary-empty" id="diary-empty-today" hidden>
+                    <p class="empty-hint">No diary entries yet today.</p>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
+
+          <section class="diary-view" id="diary-view" hidden aria-label="Diary archive">
+            <div class="diary-archive-panel">
+              <p class="history-intro">All diary entries, grouped by day.</p>
+              <ul class="diary-archive-list" id="diary-archive-list"></ul>
+              <div class="empty-state" id="diary-archive-empty">
+                <p class="empty-title">No diary entries yet</p>
+                <p class="empty-hint">Write your first note on My Tasks.</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="history-view" id="history-view" hidden aria-label="Checklist history">
+            <div class="history-panel">
+              <p class="history-intro">Past days — done vs rolled forward.</p>
+              <ul class="history-list" id="history-list"></ul>
+              <div class="empty-state" id="history-empty">
+                <p class="empty-title">No history yet</p>
+                <p class="empty-hint">Completed days appear here after midnight.</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="dashboard-view" id="dashboard-view" hidden aria-label="Dashboard">
+            <div class="metric-grid" id="dash-metrics"></div>
+            <div class="dash-grid">
+              <div class="dash-card">
+                <h2 class="dash-card-title">Tasks by status</h2>
+                <ul class="status-bars" id="dash-status-bars"></ul>
+              </div>
+              <div class="dash-card">
+                <h2 class="dash-card-title">Upcoming due</h2>
+                <ul class="upcoming-list" id="dash-upcoming"></ul>
+              </div>
+            </div>
+          </section>
+
+          <section class="queue-view" id="queue-view" hidden aria-label="Team queue">
+            <div class="queue-toolbar">
+              <input type="search" id="queue-search" class="search-input" placeholder="Search cases…" autocomplete="off" />
+              <select id="queue-filter-status" class="add-select" aria-label="Filter status">
+                <option value="">All statuses</option>
+              </select>
+              <select id="queue-filter-priority" class="add-select" aria-label="Filter priority">
+                <option value="">All priorities</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+              <select id="queue-filter-assignee" class="add-select" aria-label="Filter assignee">
+                <option value="">All assignees</option>
+                <option value="mine">Assigned to me</option>
+              </select>
+              <button type="button" class="btn btn-primary" id="queue-new-btn">+ New Task</button>
+            </div>
+            <div class="queue-table-wrap">
+              <table class="queue-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Title</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th>Assignee</th>
+                    <th>Due</th>
+                  </tr>
+                </thead>
+                <tbody id="queue-tbody"></tbody>
+              </table>
+              <div class="empty-state" id="queue-empty" hidden>
+                <p class="empty-title">No cases yet</p>
+                <p class="empty-hint">Create a team task to start collaborating.</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="task-detail-view" id="task-detail-view" hidden aria-label="Case detail">
+            <button type="button" class="text-action" id="task-back-btn">← Back to queue</button>
+            <div class="task-detail-layout" id="task-detail-body"></div>
+          </section>
+
+          <div class="modal" id="task-modal" hidden>
+            <div class="modal-backdrop" id="task-modal-backdrop"></div>
+            <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="task-modal-title">
+              <h2 class="modal-title" id="task-modal-title">New task</h2>
+              <form id="task-form" class="task-form" autocomplete="off">
+                <label class="login-label" for="task-title">Title</label>
+                <input class="login-input" id="task-title" required maxlength="500" />
+                <label class="login-label" for="task-description">Description</label>
+                <textarea class="diary-textarea" id="task-description" rows="4"></textarea>
+                <div class="task-form-row">
+                  <label>
+                    <span class="login-label">Status</span>
+                    <select id="task-status" class="add-select"></select>
+                  </label>
+                  <label>
+                    <span class="login-label">Priority</span>
+                    <select id="task-priority" class="add-select">
+                      <option value="low">Low</option>
+                      <option value="medium" selected>Medium</option>
+                      <option value="high">High</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span class="login-label">Assignee</span>
+                    <select id="task-assignee" class="add-select"></select>
+                  </label>
+                  <label>
+                    <span class="login-label">Due</span>
+                    <input type="date" id="task-due" class="add-date" />
+                  </label>
+                </div>
+                <label class="login-label" for="task-tags">Tags (comma-separated)</label>
+                <input class="login-input" id="task-tags" maxlength="500" />
+                <div class="modal-actions">
+                  <button type="button" class="text-action" id="task-modal-cancel">Cancel</button>
+                  <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <section class="coming-soon-view" id="coming-soon-view" hidden aria-label="Coming soon">
+            <div class="coming-soon-panel">
+              <p class="coming-soon-eyebrow">Roadmap</p>
+              <h2 class="coming-soon-title" id="coming-soon-title">Coming soon</h2>
+              <p class="coming-soon-text" id="coming-soon-text">
+                This area is part of the Copado Support workspace roadmap. Your checklist under My Tasks stays fully
+                available today.
+              </p>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <div class="confetti" id="confetti" aria-hidden="true"></div>
+
+    <script src="app.js"></script>
+    <script src="team.js"></script>
+  </body>
+</html>
