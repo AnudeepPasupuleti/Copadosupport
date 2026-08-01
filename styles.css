@@ -105,8 +105,139 @@ body {
   cursor: pointer;
 }
 
-.impersonation-exit:hover {
-  background: #fffbeb;
+.profile-view[hidden] {
+  display: none !important;
+}
+
+.profile-layout {
+  display: grid;
+  gap: 1rem;
+  max-width: 720px;
+}
+
+.profile-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.15rem 1.25rem;
+}
+
+.profile-hero {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.profile-avatar-wrap {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+}
+
+.profile-avatar,
+.profile-avatar-fallback {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.profile-avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--sidebar-bg, #0b1f33);
+  color: #fff;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.profile-avatar-fallback[hidden],
+.profile-avatar[hidden] {
+  display: none !important;
+}
+
+.profile-display-name {
+  margin: 0 0 0.2rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.profile-display-email {
+  margin: 0 0 0.55rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.profile-section-title {
+  margin: 0 0 0.9rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.profile-form .login-label {
+  margin-top: 0.75rem;
+}
+
+.profile-form .login-label:first-of-type {
+  margin-top: 0;
+}
+
+.profile-form .login-input[readonly] {
+  background: var(--surface-muted, #f1f5f9);
+  color: var(--text-muted);
+}
+
+.profile-hint {
+  margin: 0.75rem 0 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.profile-actions {
+  margin-top: 1rem;
+}
+
+.profile-success {
+  margin: 0.65rem 0 0;
+  color: var(--success, #059669);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.profile-success[hidden],
+.profile-form .login-error[hidden] {
+  display: none !important;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.badge-admin {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.badge-manager {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.badge-muted {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.user-chip {
+  cursor: pointer;
 }
 
 /* ——— App shell ——— */

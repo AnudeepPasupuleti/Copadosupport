@@ -4,8 +4,10 @@ from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, RedirectResponse
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from starlette.middleware.sessions import SessionMiddleware
+from typing import Optional
 
 from . import config
 from .auth import router as auth_router
@@ -49,6 +51,95 @@ def health():
 @app.get("/api/me")
 def me(request: Request, user=Depends(get_current_user)):
     return user_to_dict(user, request)
+
+
+class ProfileUpdate(BaseModel):
+    name: Optional[str] = None
+    picture: Optional[str] = None
+
+
+class PasswordUpdate(BaseModel):
+    current_password: Optional[str] = None
+    new_password: str = Field(min_length=8)
+    username: Optional[str] = None
+
+
+@app.put("/api/me/profile")
+def update_profile(
+    body: ProfileUpdate,
+    request: Request,
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    from .db import User
+
+    db_user = db.get(User, user.id)
+    if not db_user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    if body.name is not None:
+        name = body.name.strip()
+        if not name:
+            raise HTTPException(status_code=400, detail="Name cannot be empty")
+        if len(name) > 255:
+            raise HTTPException(status_code=400, detail="Name is too long")
+        db_user.name = name
+
+    if body.picture is not None:
+        picture = body.picture.strip()
+        if picture and not (picture.startswith("http://") or picture.startswith("https://")):
+            raise HTTPException(status_code=400, detail="Picture must be an http(s) URL")
+        if len(picture) > 512:
+            raise HTTPException(status_code=400, detail="Picture URL is too long")
+        db_user.picture = picture or None
+
+    db.commit()
+    db.refresh(db_user)
+    return user_to_dict(db_user, request)
+
+
+@app.post("/api/me/password")
+def update_my_password(
+    body: PasswordUpdate,
+    request: Request,
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    from .db import User
+    from .seed import hash_password, verify_password
+
+    db_user = db.get(User, user.id)
+    if not db_user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    new_password = body.new_password.strip()
+    if len(new_password) < 8:
+        raise HTTPException(status_code=400, detail="New password must be at least 8 characters")
+
+    if db_user.password_hash:
+        if not body.current_password:
+            raise HTTPException(status_code=400, detail="Current password required")
+        if not verify_password(body.current_password, db_user.password_hash):
+            raise HTTPException(status_code=400, detail="Current password is incorrect")
+        if new_password == body.current_password:
+            raise HTTPException(status_code=400, detail="New password must be different")
+    else:
+        username = (body.username or db_user.username or "").strip()
+        if not username:
+            raise HTTPException(status_code=400, detail="Username required to set a password")
+        conflict = (
+            db.query(User)
+            .filter(User.username == username, User.id != db_user.id)
+            .first()
+        )
+        if conflict:
+            raise HTTPException(status_code=400, detail="Username already exists")
+        db_user.username = username
+
+    db_user.password_hash = hash_password(new_password)
+    db.commit()
+    db.refresh(db_user)
+    return {"ok": True, "user": user_to_dict(db_user, request)}
 
 
 @app.get("/api/state")

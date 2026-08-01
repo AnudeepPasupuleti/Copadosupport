@@ -269,3 +269,29 @@ def test_impersonate_and_reset_password(client):
     login_user = client.post("/auth/login", json={"username": "agent1", "password": "agentpass1"})
     assert login_user.status_code == 200
     assert login_user.json()["user"]["email"] == "agent@example.com"
+
+
+def test_profile_update_and_password(client):
+    client.post("/auth/login", json={"username": "admin", "password": "admin"})
+    me = client.get("/api/me").json()
+    assert me["name"] == "Admin"
+
+    updated = client.put(
+        "/api/me/profile",
+        json={"name": "Support Admin", "picture": "https://example.com/a.png"},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["name"] == "Support Admin"
+    assert updated.json()["picture"] == "https://example.com/a.png"
+
+    bad_pic = client.put("/api/me/profile", json={"name": "X", "picture": "ftp://nope"})
+    assert bad_pic.status_code == 400
+
+    pw = client.post(
+        "/api/me/password",
+        json={"current_password": "admin", "new_password": "adminpass1"},
+    )
+    assert pw.status_code == 200
+    client.post("/auth/logout")
+    assert client.post("/auth/login", json={"username": "admin", "password": "admin"}).status_code == 401
+    assert client.post("/auth/login", json={"username": "admin", "password": "adminpass1"}).status_code == 200

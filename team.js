@@ -131,7 +131,9 @@
     await ensureMeta();
     hideTeamViews();
     const todayView = document.getElementById("today-view");
+    const profileView = document.getElementById("profile-view");
     if (todayView) todayView.hidden = true;
+    if (profileView) profileView.hidden = true;
     dashboardView.hidden = false;
     const data = await api("/api/queue/dashboard");
     if (!data) return;
@@ -259,7 +261,9 @@
     await ensureMeta();
     hideTeamViews();
     const todayView = document.getElementById("today-view");
+    const profileView = document.getElementById("profile-view");
     if (todayView) todayView.hidden = true;
+    if (profileView) profileView.hidden = true;
     queueView.hidden = false;
     await loadQueue();
   }
@@ -330,6 +334,8 @@
     if (historyView) historyView.hidden = true;
     if (comingSoon) comingSoon.hidden = true;
     if (toolbar) toolbar.hidden = true;
+    const profileView = document.getElementById("profile-view");
+    if (profileView) profileView.hidden = true;
 
     if (window.ChecklistApp) {
       window.ChecklistApp.activateNav("queue");

@@ -72,6 +72,8 @@ const comingSoonView = document.getElementById("coming-soon-view");
 const comingSoonTitle = document.getElementById("coming-soon-title");
 const comingSoonText = document.getElementById("coming-soon-text");
 const tasksToolbar = document.getElementById("tasks-toolbar");
+const profileView = document.getElementById("profile-view");
+const profileMenuBtn = document.getElementById("profile-menu-btn");
 const appShell = document.querySelector(".app-shell");
 const sidebarOpen = document.getElementById("sidebar-open");
 const sidebarClose = document.getElementById("sidebar-close");
@@ -176,6 +178,14 @@ async function init() {
   document.querySelectorAll(".nav-item[data-stub]").forEach((btn) => {
     btn.addEventListener("click", () => showComingSoon(btn.dataset.nav));
   });
+  profileMenuBtn?.addEventListener("click", () => {
+    closeAppMenu();
+    setView("profile");
+  });
+  userChip?.addEventListener("click", () => setView("profile"));
+  document.getElementById("profile-form")?.addEventListener("submit", onSaveProfile);
+  document.getElementById("profile-password-form")?.addEventListener("submit", onSavePassword);
+  document.getElementById("profile-picture")?.addEventListener("input", previewProfilePicture);
   sidebarOpen?.addEventListener("click", openSidebar);
   sidebarClose?.addEventListener("click", closeSidebar);
   sidebarBackdrop?.addEventListener("click", closeSidebar);
@@ -227,10 +237,14 @@ async function requireAuth() {
 function showUser(user) {
   if (!userChip) return;
   userChip.hidden = false;
+  userChip.style.cursor = "pointer";
+  userChip.title = "Open profile";
   userName.textContent = user.name || user.email || user.username || "User";
   if (user.picture && userAvatar) {
     userAvatar.src = user.picture;
     userAvatar.hidden = false;
+  } else if (userAvatar) {
+    userAvatar.hidden = true;
   }
 
   const banner = document.getElementById("impersonation-banner");
@@ -958,7 +972,9 @@ function setView(view) {
   todayView.hidden = view !== "today";
   diaryView.hidden = view !== "diary";
   historyView.hidden = view !== "history";
+  if (profileView) profileView.hidden = view !== "profile";
   if (tasksToolbar) tasksToolbar.hidden = view !== "today";
+  if (dateLabel) dateLabel.hidden = view === "profile";
 
   if (window.TeamApp) {
     window.TeamApp.hideTeamViews();
@@ -979,6 +995,7 @@ function setView(view) {
     history: "History",
     dashboard: "Dashboard",
     queue: "Team Queue",
+    profile: "Profile",
   };
   if (pageTitle) pageTitle.textContent = titles[view] || "My Tasks";
 
@@ -988,7 +1005,136 @@ function setView(view) {
   });
 
   closeSidebar();
+  if (view === "profile") {
+    fillProfileForm(currentUser);
+    return;
+  }
   render();
+}
+
+function fillProfileForm(user) {
+  if (!user) return;
+  const name = user.name || "";
+  const email = user.email || "";
+  const roleLabel = user.role_label || user.role || "Member";
+  document.getElementById("profile-display-name").textContent = name || email || "User";
+  document.getElementById("profile-display-email").textContent = email || "—";
+  const roleBadge = document.getElementById("profile-role-badge");
+  if (roleBadge) {
+    roleBadge.textContent = roleLabel;
+    roleBadge.className = `badge ${user.is_admin ? "badge-admin" : user.role === "manager" ? "badge-manager" : "badge-muted"}`;
+  }
+  document.getElementById("profile-name").value = name;
+  document.getElementById("profile-email").value = email;
+  document.getElementById("profile-username").value = user.username || "—";
+  document.getElementById("profile-auth").value = user.auth_type || "—";
+  document.getElementById("profile-picture").value = user.picture || "";
+  setProfileAvatar(user.picture, name || email);
+
+  const hasPassword = !!user.has_password;
+  document.getElementById("profile-password-title").textContent = hasPassword
+    ? "Change password"
+    : "Set password";
+  document.getElementById("profile-password-submit").textContent = hasPassword
+    ? "Update password"
+    : "Set password";
+  document.getElementById("profile-current-password-wrap").hidden = !hasPassword;
+  document.getElementById("profile-username-set-wrap").hidden = hasPassword || !!user.username;
+  document.getElementById("profile-current-password").value = "";
+  document.getElementById("profile-new-password").value = "";
+  document.getElementById("profile-set-username").value = user.username || "";
+  document.getElementById("profile-error").hidden = true;
+  document.getElementById("profile-success").hidden = true;
+  document.getElementById("profile-password-error").hidden = true;
+  document.getElementById("profile-password-success").hidden = true;
+}
+
+function setProfileAvatar(url, label) {
+  const img = document.getElementById("profile-avatar");
+  const fallback = document.getElementById("profile-avatar-fallback");
+  if (!img || !fallback) return;
+  if (url) {
+    img.src = url;
+    img.hidden = false;
+    fallback.hidden = true;
+  } else {
+    img.hidden = true;
+    fallback.hidden = false;
+    fallback.textContent = (label || "?").trim().charAt(0).toUpperCase() || "?";
+  }
+}
+
+function previewProfilePicture() {
+  const url = document.getElementById("profile-picture")?.value.trim() || "";
+  const name = document.getElementById("profile-name")?.value || "";
+  setProfileAvatar(url, name);
+}
+
+async function onSaveProfile(e) {
+  e.preventDefault();
+  const err = document.getElementById("profile-error");
+  const ok = document.getElementById("profile-success");
+  err.hidden = true;
+  ok.hidden = true;
+  try {
+    const res = await fetch("/api/me/profile", {
+      method: "PUT",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: document.getElementById("profile-name").value.trim(),
+        picture: document.getElementById("profile-picture").value.trim(),
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(typeof data.detail === "string" ? data.detail : "Could not save profile");
+    }
+    currentUser = data;
+    showUser(currentUser);
+    fillProfileForm(currentUser);
+    ok.hidden = false;
+  } catch (ex) {
+    err.textContent = ex.message || "Could not save profile";
+    err.hidden = false;
+  }
+}
+
+async function onSavePassword(e) {
+  e.preventDefault();
+  const err = document.getElementById("profile-password-error");
+  const ok = document.getElementById("profile-password-success");
+  err.hidden = true;
+  ok.hidden = true;
+  const payload = {
+    new_password: document.getElementById("profile-new-password").value,
+  };
+  if (currentUser?.has_password) {
+    payload.current_password = document.getElementById("profile-current-password").value;
+  } else if (!currentUser?.username) {
+    payload.username = document.getElementById("profile-set-username").value.trim();
+  }
+  try {
+    const res = await fetch("/api/me/password", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(typeof data.detail === "string" ? data.detail : "Could not update password");
+    }
+    if (data.user) {
+      currentUser = data.user;
+      showUser(currentUser);
+      fillProfileForm(currentUser);
+    }
+    ok.hidden = false;
+  } catch (ex) {
+    err.textContent = ex.message || "Could not update password";
+    err.hidden = false;
+  }
 }
 
 function showComingSoon(navKey) {
@@ -996,7 +1142,9 @@ function showComingSoon(navKey) {
   todayView.hidden = true;
   diaryView.hidden = true;
   historyView.hidden = true;
+  if (profileView) profileView.hidden = true;
   if (tasksToolbar) tasksToolbar.hidden = true;
+  if (dateLabel) dateLabel.hidden = false;
   if (window.TeamApp) window.TeamApp.hideTeamViews();
   if (comingSoonView) comingSoonView.hidden = false;
 
@@ -1498,7 +1646,7 @@ function checkDueReminders(force = false) {
 }
 
 function render() {
-  if (activeView === "stub" || activeView === "dashboard" || activeView === "queue") return;
+  if (activeView === "stub" || activeView === "dashboard" || activeView === "queue" || activeView === "profile") return;
   if (activeView === "history") {
     renderHistory();
     return;

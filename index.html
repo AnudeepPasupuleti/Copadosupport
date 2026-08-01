@@ -68,7 +68,11 @@
             <span class="nav-soon">Soon</span>
           </button>
 
-          <p class="sidebar-section-label">Admin</p>
+          <p class="sidebar-section-label">Account</p>
+          <button type="button" class="nav-item" data-nav="profile" data-view="profile">
+            <span class="nav-icon" aria-hidden="true">☺</span>
+            Profile
+          </button>
           <div id="sidebar-admin-slot"></div>
           <button type="button" class="nav-item" data-nav="settings" data-stub="true">
             <span class="nav-icon" aria-hidden="true">⚙</span>
@@ -136,6 +140,7 @@
                 <button type="button" class="menu-item" id="remind-btn" role="menuitem" hidden>Reminders</button>
                 <button type="button" class="menu-item" id="export-btn" role="menuitem">Export</button>
                 <button type="button" class="menu-item" id="import-btn" role="menuitem">Import</button>
+                <button type="button" class="menu-item" id="profile-menu-btn" role="menuitem">Profile</button>
                 <div id="menu-admin-slot"></div>
                 <button type="button" class="menu-item menu-item-danger" id="logout-btn" role="menuitem">Sign out</button>
               </div>
@@ -406,6 +411,71 @@
               </form>
             </div>
           </div>
+
+          <section class="profile-view" id="profile-view" hidden aria-label="Profile">
+            <div class="profile-layout">
+              <div class="profile-card profile-hero">
+                <div class="profile-avatar-wrap">
+                  <img class="profile-avatar" id="profile-avatar" alt="" hidden />
+                  <div class="profile-avatar-fallback" id="profile-avatar-fallback" aria-hidden="true">?</div>
+                </div>
+                <div class="profile-hero-text">
+                  <h2 class="profile-display-name" id="profile-display-name">—</h2>
+                  <p class="profile-display-email" id="profile-display-email">—</p>
+                  <span class="badge" id="profile-role-badge">Member</span>
+                </div>
+              </div>
+
+              <div class="profile-card">
+                <h3 class="profile-section-title">Profile information</h3>
+                <form id="profile-form" class="profile-form" autocomplete="off">
+                  <label class="login-label" for="profile-name">Display name</label>
+                  <input class="login-input" id="profile-name" required maxlength="255" />
+
+                  <label class="login-label" for="profile-email">Email</label>
+                  <input class="login-input" id="profile-email" type="email" readonly />
+
+                  <label class="login-label" for="profile-username">Username</label>
+                  <input class="login-input" id="profile-username" readonly />
+
+                  <label class="login-label" for="profile-auth">Sign-in method</label>
+                  <input class="login-input" id="profile-auth" readonly />
+
+                  <label class="login-label" for="profile-picture">Avatar URL</label>
+                  <input class="login-input" id="profile-picture" type="url" maxlength="512" placeholder="https://…" />
+
+                  <p class="profile-hint">Role is assigned by an Admin and can’t be changed here.</p>
+                  <p class="login-error" id="profile-error" hidden></p>
+                  <p class="profile-success" id="profile-success" hidden>Profile saved.</p>
+                  <div class="profile-actions">
+                    <button type="submit" class="btn btn-primary">Save profile</button>
+                  </div>
+                </form>
+              </div>
+
+              <div class="profile-card">
+                <h3 class="profile-section-title" id="profile-password-title">Password</h3>
+                <form id="profile-password-form" class="profile-form" autocomplete="off">
+                  <div id="profile-username-set-wrap" hidden>
+                    <label class="login-label" for="profile-set-username">Choose a username</label>
+                    <input class="login-input" id="profile-set-username" maxlength="120" autocomplete="username" />
+                  </div>
+                  <div id="profile-current-password-wrap">
+                    <label class="login-label" for="profile-current-password">Current password</label>
+                    <input class="login-input" id="profile-current-password" type="password" autocomplete="current-password" />
+                  </div>
+                  <label class="login-label" for="profile-new-password">New password</label>
+                  <input class="login-input" id="profile-new-password" type="password" required minlength="8" autocomplete="new-password" />
+                  <p class="profile-hint">Minimum 8 characters. OAuth users can also set a password for username sign-in.</p>
+                  <p class="login-error" id="profile-password-error" hidden></p>
+                  <p class="profile-success" id="profile-password-success" hidden>Password updated.</p>
+                  <div class="profile-actions">
+                    <button type="submit" class="btn btn-primary" id="profile-password-submit">Update password</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </section>
 
           <section class="coming-soon-view" id="coming-soon-view" hidden aria-label="Coming soon">
             <div class="coming-soon-panel">
