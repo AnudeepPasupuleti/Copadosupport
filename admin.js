@@ -258,7 +258,7 @@ userTableBody.addEventListener("change", async (e) => {
   }
 });
 
-userForm.addEventListener("submit", async (e) => {
+addForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   adminError.hidden = true;
   try {
