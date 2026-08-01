@@ -57,6 +57,10 @@
             <span class="nav-icon" aria-hidden="true">☰</span>
             Team Queue
           </button>
+          <button type="button" class="nav-item" data-nav="org" data-view="org">
+            <span class="nav-icon" aria-hidden="true">◎</span>
+            Org Chart
+          </button>
           <button type="button" class="nav-item" data-nav="calendar" data-stub="true">
             <span class="nav-icon" aria-hidden="true">▦</span>
             Calendar
@@ -412,6 +416,83 @@
             </div>
           </div>
 
+          <section class="org-view" id="org-view" hidden aria-label="Org Chart">
+            <div class="org-page">
+              <div class="org-toolbar" id="org-edit-toolbar" hidden>
+                <button type="button" class="btn btn-primary" id="org-add-team-btn">+ New team</button>
+              </div>
+              <div class="org-grid">
+                <section class="org-panel">
+                  <div class="org-panel-head">
+                    <h2 class="org-panel-title">Reporting structure</h2>
+                    <p class="org-panel-desc">Who reports to whom across the support org.</p>
+                  </div>
+                  <div id="org-tree" class="org-tree"></div>
+                </section>
+                <section class="org-panel">
+                  <div class="org-panel-head">
+                    <h2 class="org-panel-title">Teams</h2>
+                    <p class="org-panel-desc">Named groups for queues and collaboration.</p>
+                  </div>
+                  <div id="org-teams" class="org-teams"></div>
+                </section>
+              </div>
+            </div>
+          </section>
+
+          <div class="modal" id="org-team-modal" hidden>
+            <div class="modal-backdrop" id="org-team-modal-backdrop"></div>
+            <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="org-team-modal-title">
+              <h2 class="modal-title" id="org-team-modal-title">New team</h2>
+              <form id="org-team-form" class="task-form" autocomplete="off">
+                <input type="hidden" id="org-team-edit-id" value="" />
+                <label class="login-label" for="org-team-name">Name</label>
+                <input class="login-input" id="org-team-name" required maxlength="120" />
+                <label class="login-label" for="org-team-description">Description</label>
+                <textarea class="diary-textarea" id="org-team-description" rows="3"></textarea>
+                <div class="modal-actions">
+                  <button type="button" class="text-action" id="org-team-modal-cancel">Cancel</button>
+                  <button type="submit" class="btn btn-primary">Save team</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <div class="modal" id="org-member-modal" hidden>
+            <div class="modal-backdrop" id="org-member-modal-backdrop"></div>
+            <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="org-member-modal-title">
+              <h2 class="modal-title" id="org-member-modal-title">Add member</h2>
+              <form id="org-member-form" class="task-form" autocomplete="off">
+                <input type="hidden" id="org-member-team-id" value="" />
+                <label class="login-label" for="org-member-user">Person</label>
+                <select class="add-select" id="org-member-user" required></select>
+                <label class="login-label" for="org-member-title">Title (optional)</label>
+                <input class="login-input" id="org-member-title" maxlength="120" placeholder="e.g. L1 Agent" />
+                <div class="modal-actions">
+                  <button type="button" class="text-action" id="org-member-modal-cancel">Cancel</button>
+                  <button type="submit" class="btn btn-primary">Add to team</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <div class="modal" id="org-manager-modal" hidden>
+            <div class="modal-backdrop" id="org-manager-modal-backdrop"></div>
+            <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="org-manager-modal-title">
+              <h2 class="modal-title" id="org-manager-modal-title">Set manager</h2>
+              <form id="org-manager-form" class="task-form" autocomplete="off">
+                <input type="hidden" id="org-manager-user-id" value="" />
+                <p class="org-manager-person" id="org-manager-person-label"></p>
+                <label class="login-label" for="org-manager-select">Reports to</label>
+                <select class="add-select" id="org-manager-select"></select>
+                <div class="modal-actions">
+                  <button type="button" class="text-action" id="org-manager-modal-cancel">Cancel</button>
+                  <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
           <section class="profile-view" id="profile-view" hidden aria-label="Profile">
             <div class="profile-page">
               <header class="profile-identity">
@@ -530,5 +611,6 @@
 
     <script src="app.js"></script>
     <script src="team.js"></script>
+    <script src="org.js"></script>
   </body>
 </html>

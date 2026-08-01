@@ -24,14 +24,22 @@ def client(tmp_path, monkeypatch):
     import importlib
     import backend.config as config
     import backend.db as db
+    import backend.deps as deps
     import backend.seed as seed
+    import backend.auth as auth
+    import backend.admin as admin
     import backend.queue as queue
+    import backend.org as org
     import backend.main as main
 
     importlib.reload(config)
     importlib.reload(db)
+    importlib.reload(deps)
     importlib.reload(seed)
+    importlib.reload(auth)
+    importlib.reload(admin)
     importlib.reload(queue)
+    importlib.reload(org)
     importlib.reload(main)
 
     with TestClient(main.app) as c:
@@ -291,3 +299,86 @@ def test_profile_update_and_password(client):
     client.post("/auth/logout")
     assert client.post("/auth/login", json={"username": "admin", "password": "admin"}).status_code == 401
     assert client.post("/auth/login", json={"username": "admin", "password": "adminpass1"}).status_code == 200
+
+
+def test_org_chart_permissions_and_cycle(client):
+    client.post("/auth/login", json={"username": "admin", "password": "admin"})
+
+    member = client.post(
+        "/api/admin/users",
+        json={
+            "email": "member@example.com",
+            "name": "Member",
+            "auth_type": "password",
+            "username": "member1",
+            "password": "memberpass1",
+            "role": "member",
+        },
+    )
+    assert member.status_code == 200
+    member_id = member.json()["id"]
+
+    manager = client.post(
+        "/api/admin/users",
+        json={
+            "email": "manager@example.com",
+            "name": "Manager",
+            "auth_type": "password",
+            "username": "manager1",
+            "password": "managerpass1",
+            "role": "manager",
+        },
+    )
+    assert manager.status_code == 200
+    manager_id = manager.json()["id"]
+
+    client.post("/auth/logout")
+    assert client.post("/auth/login", json={"username": "member1", "password": "memberpass1"}).status_code == 200
+
+    chart = client.get("/api/org/chart")
+    assert chart.status_code == 200
+    body = chart.json()
+    assert body["can_edit"] is False
+    assert "tree" in body and "teams" in body and "people" in body
+    assert client.get("/api/me").json()["can_edit_org"] is False
+
+    denied = client.post("/api/org/teams", json={"name": "L1 Support", "description": "Front line"})
+    assert denied.status_code == 403
+
+    client.post("/auth/logout")
+    assert client.post("/auth/login", json={"username": "manager1", "password": "managerpass1"}).status_code == 200
+    assert client.get("/api/me").json()["can_edit_org"] is True
+
+    team = client.post(
+        "/api/org/teams",
+        json={"name": "L1 Support", "description": "Front line"},
+    )
+    assert team.status_code == 200
+    team_id = team.json()["id"]
+
+    added = client.post(
+        f"/api/org/teams/{team_id}/members",
+        json={"user_id": member_id, "title": "Agent"},
+    )
+    assert added.status_code == 200
+    assert any(m["id"] == member_id for m in added.json()["members"])
+
+    set_mgr = client.put(
+        f"/api/org/users/{member_id}/manager",
+        json={"manager_id": manager_id},
+    )
+    assert set_mgr.status_code == 200
+    assert set_mgr.json()["reports_to_id"] == manager_id
+
+    # Cycle: manager reports to member who already reports to manager
+    cycle = client.put(
+        f"/api/org/users/{manager_id}/manager",
+        json={"manager_id": member_id},
+    )
+    assert cycle.status_code == 400
+    assert "cycle" in cycle.json()["detail"].lower()
+
+    chart2 = client.get("/api/org/chart")
+    assert chart2.status_code == 200
+    assert chart2.json()["can_edit"] is True
+    assert any(t["id"] == team_id for t in chart2.json()["teams"])

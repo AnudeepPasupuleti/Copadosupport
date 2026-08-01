@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, create_engine, text
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, create_engine, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, sessionmaker
 
 from . import config
@@ -24,12 +24,18 @@ class User(Base):
     picture: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
     auth_type: Mapped[str] = mapped_column(String(32), nullable=False)
     role: Mapped[str] = mapped_column(String(32), nullable=False, default="member")
+    reports_to_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
     )
 
     state: Mapped["UserState"] = relationship(back_populates="user", uselist=False)
+    manager: Mapped[Optional["User"]] = relationship(
+        "User",
+        remote_side="User.id",
+        foreign_keys=[reports_to_id],
+    )
 
 
 class UserState(Base):
@@ -113,6 +119,35 @@ class Notification(Base):
     )
 
 
+class OrgTeam(Base):
+    __tablename__ = "org_teams"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+    members: Mapped[list["OrgTeamMember"]] = relationship(
+        back_populates="team",
+        cascade="all, delete-orphan",
+    )
+
+
+class OrgTeamMember(Base):
+    __tablename__ = "org_team_members"
+    __table_args__ = (UniqueConstraint("team_id", "user_id", name="uq_org_team_user"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    team_id: Mapped[int] = mapped_column(ForeignKey("org_teams.id"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(120), nullable=False, default="")
+
+    team: Mapped["OrgTeam"] = relationship(back_populates="members")
+
+
 engine = create_engine(
     config.DATABASE_URL,
     connect_args={"check_same_thread": False} if config.DATABASE_URL.startswith("sqlite") else {},
@@ -174,6 +209,10 @@ def _migrate_schema() -> None:
         conn.execute(
             text("UPDATE users SET role = 'member' WHERE role IS NULL OR role = ''")
         )
+
+        cols = _users_columns(conn)
+        if "reports_to_id" not in cols:
+            conn.execute(text("ALTER TABLE users ADD COLUMN reports_to_id INTEGER"))
 
 
 def get_db():

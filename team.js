@@ -130,6 +130,7 @@
   async function showDashboard() {
     await ensureMeta();
     hideTeamViews();
+    if (window.OrgApp) window.OrgApp.hideOrgView();
     const todayView = document.getElementById("today-view");
     const profileView = document.getElementById("profile-view");
     if (todayView) todayView.hidden = true;
@@ -260,6 +261,7 @@
   async function showQueue() {
     await ensureMeta();
     hideTeamViews();
+    if (window.OrgApp) window.OrgApp.hideOrgView();
     const todayView = document.getElementById("today-view");
     const profileView = document.getElementById("profile-view");
     if (todayView) todayView.hidden = true;

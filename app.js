@@ -972,20 +972,35 @@ function setView(view) {
   diaryView.hidden = view !== "diary";
   historyView.hidden = view !== "history";
   if (profileView) profileView.hidden = view !== "profile";
+  const orgView = document.getElementById("org-view");
+  if (orgView && view !== "org") orgView.hidden = true;
   if (tasksToolbar) tasksToolbar.hidden = view !== "today";
   if (dateLabel) dateLabel.hidden = view === "profile";
 
-  if (window.TeamApp) {
-    window.TeamApp.hideTeamViews();
-    if (window.TeamApp.onAppView(view)) {
-      const titles = { dashboard: "Dashboard", queue: "Team Queue" };
-      if (pageTitle) pageTitle.textContent = titles[view] || view;
-      document.querySelectorAll(".nav-item").forEach((item) => {
-        item.classList.toggle("is-active", item.dataset.view === view || item.dataset.nav === view);
-      });
-      closeSidebar();
-      return;
+  if (window.OrgApp) window.OrgApp.hideOrgView();
+  if (window.TeamApp) window.TeamApp.hideTeamViews();
+
+  if (window.OrgApp && window.OrgApp.onAppView(view)) {
+    if (pageTitle) pageTitle.textContent = "Org Chart";
+    if (dateLabel) {
+      dateLabel.hidden = false;
+      dateLabel.textContent = "Teams and reporting lines";
     }
+    document.querySelectorAll(".nav-item").forEach((item) => {
+      item.classList.toggle("is-active", item.dataset.view === view || item.dataset.nav === view);
+    });
+    closeSidebar();
+    return;
+  }
+
+  if (window.TeamApp && window.TeamApp.onAppView(view)) {
+    const titles = { dashboard: "Dashboard", queue: "Team Queue" };
+    if (pageTitle) pageTitle.textContent = titles[view] || view;
+    document.querySelectorAll(".nav-item").forEach((item) => {
+      item.classList.toggle("is-active", item.dataset.view === view || item.dataset.nav === view);
+    });
+    closeSidebar();
+    return;
   }
 
   const titles = {
@@ -1653,7 +1668,14 @@ function checkDueReminders(force = false) {
 }
 
 function render() {
-  if (activeView === "stub" || activeView === "dashboard" || activeView === "queue" || activeView === "profile") return;
+  if (
+    activeView === "stub" ||
+    activeView === "dashboard" ||
+    activeView === "queue" ||
+    activeView === "profile" ||
+    activeView === "org"
+  )
+    return;
   if (activeView === "history") {
     renderHistory();
     return;

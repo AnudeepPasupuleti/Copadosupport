@@ -13,6 +13,7 @@ from . import config
 from .auth import router as auth_router
 from .admin import router as admin_router
 from .queue import router as queue_router
+from .org import router as org_router
 from .db import UserState, get_db, init_db, SessionLocal
 from .deps import get_current_user, user_to_dict
 from .seed import empty_state, seed_users
@@ -29,6 +30,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(queue_router)
+app.include_router(org_router)
 
 
 @app.on_event("startup")
@@ -222,6 +224,11 @@ def app_js():
 @app.get("/team.js")
 def team_js():
     return FileResponse(ROOT / "team.js", media_type="application/javascript")
+
+
+@app.get("/org.js")
+def org_js():
+    return FileResponse(ROOT / "org.js", media_type="application/javascript")
 
 
 @app.get("/admin.js")

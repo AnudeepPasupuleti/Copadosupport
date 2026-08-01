@@ -67,8 +67,10 @@ def user_to_dict(user: User, request: Optional[Request] = None) -> dict:
         "role_label": ROLE_LABELS.get(role, "Member"),
         "is_admin": admin,
         "is_manager": role == "manager" or admin,
+        "can_edit_org": role in ("admin", "manager") or admin,
         "has_password": bool(user.password_hash),
         "impersonating": False,
+        "reports_to_id": getattr(user, "reports_to_id", None),
     }
     if request is not None:
         impersonator_id = request.session.get("impersonator_id")
