@@ -418,6 +418,14 @@ def dashboard(db: Session = Depends(get_db), user: User = Depends(get_current_us
         .all()
     )
 
+    my_tickets = (
+        db.query(TeamTask)
+        .filter(TeamTask.assignee_id == user.id, TeamTask.status.in_(OPEN_STATUSES))
+        .order_by(TeamTask.updated_at.desc())
+        .limit(10)
+        .all()
+    )
+
     return {
         "total": total,
         "mine": mine,
@@ -425,6 +433,7 @@ def dashboard(db: Session = Depends(get_db), user: User = Depends(get_current_us
         "due_today": due_today,
         "by_status": by_status,
         "upcoming": [_task_dict(db, t) for t in upcoming],
+        "my_tickets": [_task_dict(db, t) for t in my_tickets],
     }
 
 

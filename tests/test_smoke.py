@@ -173,6 +173,8 @@ def test_team_queue_dashboard_and_notifications(client):
     assert body["total"] >= 1
     assert body["mine"] >= 1
     assert body["by_status"]["investigating"] >= 1
+    assert "my_tickets" in body
+    assert any(t["id"] == task_id for t in body["my_tickets"])
 
     client.post(
         "/api/admin/users",

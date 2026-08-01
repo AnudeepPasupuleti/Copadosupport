@@ -1526,4 +1526,17 @@ window.ChecklistApp = {
       );
     });
   },
+  getMyTasks() {
+    const items = state.items || [];
+    const open = items.filter((i) => !i.checked);
+    const done = items.filter((i) => i.checked);
+    return {
+      activeDate: state.activeDate,
+      open,
+      done,
+      total: items.length,
+      openCount: open.length,
+      doneCount: done.length,
+    };
+  },
 };

@@ -100,7 +100,7 @@
       const current = filter.value;
       filter.innerHTML = `<option value="">Any assignee</option>` + opts;
       filter.value = current;
-      // Assignee person filter only applies within "All team tasks"
+      // Assignee person filter only applies within "All team tickets"
       filter.disabled = queueScope !== "all";
     }
     if (formAssignee) {
@@ -136,12 +136,22 @@
     const data = await api("/api/queue/dashboard");
     if (!data) return;
 
+    const myTasks = window.ChecklistApp?.getMyTasks?.() || {
+      open: [],
+      done: [],
+      openCount: 0,
+      doneCount: 0,
+      total: 0,
+    };
+
     const metrics = document.getElementById("dash-metrics");
     metrics.innerHTML = [
-      ["Total Tasks", data.total],
-      ["My Open", data.mine],
-      ["Overdue", data.overdue],
-      ["Due Today", data.due_today],
+      ["Total Tickets", data.total],
+      ["My Open Tickets", data.mine],
+      ["Overdue Tickets", data.overdue],
+      ["Tickets Due Today", data.due_today],
+      ["My Tasks Open", myTasks.openCount],
+      ["My Tasks Done", myTasks.doneCount],
     ]
       .map(
         ([label, value]) =>
@@ -182,6 +192,67 @@
         btn.addEventListener("click", () => openTaskDetail(Number(btn.dataset.taskId)));
       });
     }
+
+    renderMyTasksCard(myTasks);
+    renderMyTicketsCard(data.my_tickets || []);
+
+    const gotoTasks = document.getElementById("dash-goto-tasks");
+    if (gotoTasks) {
+      gotoTasks.onclick = () => window.ChecklistApp?.setView?.("today");
+    }
+    const gotoTickets = document.getElementById("dash-goto-tickets");
+    if (gotoTickets) {
+      gotoTickets.onclick = () => {
+        queueScope = "assigned";
+        window.ChecklistApp?.setView?.("queue");
+        // Ensure scope UI matches after navigation
+        setTimeout(() => setQueueScope("assigned"), 0);
+      };
+    }
+  }
+
+  function renderMyTasksCard(myTasks) {
+    const list = document.getElementById("dash-my-tasks");
+    if (!list) return;
+    const items = [...(myTasks.open || []), ...(myTasks.done || [])].slice(0, 12);
+    if (!items.length) {
+      list.innerHTML = `<li class="upcoming-empty">No personal tasks yet. Add some under My Tasks.</li>`;
+      return;
+    }
+    list.innerHTML = items
+      .map((item) => {
+        const due = item.dueDate ? `<span class="dash-task-due">${escapeHtml(item.dueDate)}</span>` : "";
+        const checked = item.checked ? "is-done" : "";
+        return `<li class="dash-task-row ${checked}">
+          <span class="dash-task-check" aria-hidden="true">${item.checked ? "✓" : "○"}</span>
+          <span class="dash-task-text">${escapeHtml(item.text || "Untitled")}</span>
+          ${due}
+        </li>`;
+      })
+      .join("");
+  }
+
+  function renderMyTicketsCard(tickets) {
+    const list = document.getElementById("dash-my-tickets");
+    if (!list) return;
+    if (!tickets.length) {
+      list.innerHTML = `<li class="upcoming-empty">No open tickets assigned to you.</li>`;
+      return;
+    }
+    list.innerHTML = tickets
+      .map(
+        (t) => `<li>
+          <button type="button" class="upcoming-link" data-task-id="${t.id}">
+            <span class="upcoming-id">${escapeHtml(t.case_number)}</span>
+            <span class="upcoming-title">${escapeHtml(t.title)}</span>
+            <span class="badge ${statusClass(t.status)}">${escapeHtml(statusLabel(t.status))}</span>
+          </button>
+        </li>`
+      )
+      .join("");
+    list.querySelectorAll("[data-task-id]").forEach((btn) => {
+      btn.addEventListener("click", () => openTaskDetail(Number(btn.dataset.taskId)));
+    });
   }
 
   async function showQueue() {
@@ -216,13 +287,13 @@
       if (tasks.length === 0) {
         if (queueScope === "assigned") {
           if (title) title.textContent = "Nothing assigned to you";
-          if (hint) hint.textContent = "Cases assigned to you will show up here.";
+          if (hint) hint.textContent = "Tickets assigned to you will show up here.";
         } else if (queueScope === "created") {
-          if (title) title.textContent = "You haven’t created any cases";
-          if (hint) hint.textContent = "Use + New Task to report a case for the team.";
+          if (title) title.textContent = "You haven’t created any tickets";
+          if (hint) hint.textContent = "Use + New Ticket to report a ticket for the team.";
         } else {
-          if (title) title.textContent = "No cases yet";
-          if (hint) hint.textContent = "Create a team task to start collaborating.";
+          if (title) title.textContent = "No tickets yet";
+          if (hint) hint.textContent = "Create a team ticket to start collaborating.";
         }
       }
     }
@@ -262,7 +333,7 @@
 
     if (window.ChecklistApp) {
       window.ChecklistApp.activateNav("queue");
-      window.ChecklistApp.setPageTitle("Case detail");
+      window.ChecklistApp.setPageTitle("Ticket detail");
     }
     taskDetailView.hidden = false;
     try {
@@ -270,7 +341,7 @@
       if (!task) return;
       renderTaskDetail(task);
     } catch (err) {
-      taskDetailBody.innerHTML = `<p class="login-error">${escapeHtml(err.message || "Could not open task")}</p>`;
+      taskDetailBody.innerHTML = `<p class="login-error">${escapeHtml(err.message || "Could not open ticket")}</p>`;
     }
   }
 
@@ -292,7 +363,7 @@
         <p class="task-case-id">${escapeHtml(task.case_number)}</p>
         <h2 class="task-detail-title">${escapeHtml(task.title)}</h2>
         <div class="task-detail-actions">
-          <button type="button" class="btn btn-primary" id="task-edit-btn">Edit</button>
+          <button type="button" class="btn btn-primary" id="task-edit-btn">Edit ticket</button>
         </div>
         <section class="task-section">
           <h3>Description</h3>
@@ -350,7 +421,7 @@
 
   function openTaskModal(task = null) {
     editingTaskId = task ? task.id : null;
-    document.getElementById("task-modal-title").textContent = task ? "Edit task" : "New task";
+    document.getElementById("task-modal-title").textContent = task ? "Edit ticket" : "New ticket";
     document.getElementById("task-title").value = task?.title || "";
     document.getElementById("task-description").value = task?.description || "";
     document.getElementById("task-status").value = task?.status || "new";
@@ -397,7 +468,7 @@
       refreshNotifications();
       if (task) openTaskDetail(task.id);
     } catch (err) {
-      alert(err.message || "Could not save task");
+      alert(err.message || "Could not save ticket");
     }
   }
 
