@@ -1005,9 +1005,14 @@ function setView(view) {
 
   closeSidebar();
   if (view === "profile") {
+    if (dateLabel) {
+      dateLabel.hidden = false;
+      dateLabel.textContent = "Manage your account details and password";
+    }
     fillProfileForm(currentUser);
     return;
   }
+  if (dateLabel) dateLabel.hidden = false;
   render();
 }
 
@@ -1021,17 +1026,29 @@ function fillProfileForm(user) {
   const roleBadge = document.getElementById("profile-role-badge");
   if (roleBadge) {
     roleBadge.textContent = roleLabel;
-    roleBadge.className = `badge ${user.is_admin ? "badge-admin" : user.role === "manager" ? "badge-manager" : "badge-muted"}`;
+    roleBadge.className = `profile-role-pill ${
+      user.is_admin ? "badge-admin" : user.role === "manager" ? "badge-manager" : ""
+    }`;
   }
   document.getElementById("profile-name").value = name;
-  document.getElementById("profile-email").value = email;
-  document.getElementById("profile-username").value = user.username || "—";
+  const emailText = document.getElementById("profile-email-text");
+  const usernameText = document.getElementById("profile-username-text");
+  const roleText = document.getElementById("profile-role-text");
+  if (emailText) emailText.textContent = email || "—";
+  if (usernameText) usernameText.textContent = user.username || "Not set";
+  if (roleText) roleText.textContent = roleLabel;
   setProfileAvatar(user.picture, name || email);
 
   const hasPassword = !!user.has_password;
   document.getElementById("profile-password-title").textContent = hasPassword
     ? "Change password"
     : "Set password";
+  const pwDesc = document.getElementById("profile-password-desc");
+  if (pwDesc) {
+    pwDesc.textContent = hasPassword
+      ? "Use a strong password you don’t reuse elsewhere."
+      : "Add a username password as a backup to OAuth sign-in.";
+  }
   document.getElementById("profile-password-submit").textContent = hasPassword
     ? "Update password"
     : "Set password";
