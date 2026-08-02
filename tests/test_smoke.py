@@ -419,9 +419,10 @@ def test_org_chart_permissions_and_cycle(client):
     assert client.post("/auth/login", json={"username": "member1", "password": "memberpass1"}).status_code == 200
 
     chart = client.get("/api/org/chart")
-    assert chart.status_code == 403
+    assert chart.status_code == 200
+    assert chart.json()["can_edit"] is False
     assert client.get("/api/me").json()["can_edit_org"] is False
-    assert client.get("/api/me").json()["can_view_org"] is False
+    assert client.get("/api/me").json()["can_view_org"] is True
 
     denied = client.post("/api/org/teams", json={"name": "L1 Support", "description": "Front line"})
     assert denied.status_code == 403
@@ -456,7 +457,8 @@ def test_org_chart_permissions_and_cycle(client):
     me_member = client.get("/api/me").json()
     assert me_member["manager_name"]
     assert me_member["team_name"] == "L1 Support"
-    assert me_member["can_view_org"] is False
+    assert me_member["can_view_org"] is True
+    assert me_member["can_edit_org"] is False
 
     client.post("/auth/logout")
     assert client.post("/auth/login", json={"username": "manager1", "password": "managerpass1"}).status_code == 200

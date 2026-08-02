@@ -111,7 +111,7 @@ def user_to_dict(user: User, request: Optional[Request] = None) -> dict:
         "is_admin": admin,
         "is_super_admin": super_admin,
         "is_manager": role == "manager" or admin,
-        "can_view_org": role in ("super_admin", "admin", "manager") or admin,
+        "can_view_org": True,
         "can_edit_org": role in ("super_admin", "admin", "manager") or admin,
         "has_password": bool(user.password_hash),
         "impersonating": False,

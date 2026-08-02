@@ -14,8 +14,6 @@ router = APIRouter(prefix="/api/org", tags=["org"])
 
 
 def require_org_viewer(user: User = Depends(get_current_user)) -> User:
-    if not is_manager_or_admin(user):
-        raise HTTPException(status_code=403, detail="Admin or Manager only")
     return user
 
 

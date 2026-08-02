@@ -263,7 +263,7 @@ function showUser(user) {
   document.getElementById("admin-link")?.remove();
   document.getElementById("admin-nav")?.remove();
   const orgNav = document.getElementById("nav-org");
-  if (orgNav) orgNav.hidden = !(user.can_view_org || user.can_edit_org);
+  if (orgNav) orgNav.hidden = !(user.can_view_org ?? true);
   if (user.is_admin && !user.impersonating) {
     if (menuAdminSlot) {
       const adminLink = document.createElement("a");
@@ -959,7 +959,7 @@ function setView(view) {
   if (window.OrgApp) window.OrgApp.hideOrgView();
   if (window.TeamApp) window.TeamApp.hideTeamViews();
 
-  if (view === "org" && !(currentUser?.can_view_org || currentUser?.can_edit_org)) {
+  if (view === "org" && currentUser && currentUser.can_view_org === false) {
     setView("dashboard");
     return;
   }
