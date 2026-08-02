@@ -14,6 +14,7 @@ from .auth import router as auth_router
 from .admin import router as admin_router
 from .queue import router as queue_router
 from .org import router as org_router
+from .sse import router as sse_router
 from .db import UserState, get_db, init_db, SessionLocal
 from .deps import get_current_user, user_org_context, user_to_dict
 from .seed import empty_state, seed_users
@@ -31,6 +32,7 @@ app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(queue_router)
 app.include_router(org_router)
+app.include_router(sse_router)
 
 
 @app.on_event("startup")
@@ -43,6 +45,10 @@ def on_startup():
         seed_users(db)
     finally:
         db.close()
+    # Ensure memberships for users seeded after tables existed
+    from .db import _ensure_default_workspace
+
+    _ensure_default_workspace()
 
 
 @app.get("/api/health")
@@ -230,9 +236,9 @@ def team_js():
     return FileResponse(ROOT / "team.js", media_type="application/javascript")
 
 
-@app.get("/org.js")
-def org_js():
-    return FileResponse(ROOT / "org.js", media_type="application/javascript")
+@app.get("/realtime.js")
+def realtime_js():
+    return FileResponse(ROOT / "realtime.js", media_type="application/javascript")
 
 
 @app.get("/admin.js")

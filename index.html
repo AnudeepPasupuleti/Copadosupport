@@ -96,6 +96,7 @@
           <div class="topbar-title-block">
             <h1 class="page-title" id="page-title">My Tasks</h1>
             <p class="page-subtitle" id="date-label"></p>
+            <span class="realtime-status" id="realtime-status" hidden></span>
           </div>
           <div class="topbar-actions">
             <label class="topbar-search">
@@ -166,11 +167,6 @@
           <p class="storage-warning" id="storage-warning" hidden></p>
 
           <div id="today-view">
-            <section class="rollover-banner" id="rollover-banner" hidden>
-              <span class="rollover-icon" aria-hidden="true">↪</span>
-              <p id="rollover-text"></p>
-            </section>
-
             <section class="progress-strip" id="progress-card" hidden aria-label="Checklist progress">
               <div class="progress-strip-top">
                 <p class="progress-label" id="progress-label">0 of 0 done</p>
@@ -305,17 +301,17 @@
             <div class="dash-grid dash-grid-personal">
               <div class="dash-card">
                 <div class="dash-card-head">
-                  <h2 class="dash-card-title">My Tasks</h2>
-                  <button type="button" class="text-action" id="dash-goto-tasks">Open My Tasks</button>
-                </div>
-                <ul class="dash-my-tasks" id="dash-my-tasks"></ul>
-              </div>
-              <div class="dash-card">
-                <div class="dash-card-head">
                   <h2 class="dash-card-title">My open tickets</h2>
                   <button type="button" class="text-action" id="dash-goto-tickets">Open queue</button>
                 </div>
                 <ul class="upcoming-list" id="dash-my-tickets"></ul>
+              </div>
+              <div class="dash-card">
+                <div class="dash-card-head">
+                  <h2 class="dash-card-title">My open tasks</h2>
+                  <button type="button" class="text-action" id="dash-goto-tasks">Open My Tasks</button>
+                </div>
+                <ul class="dash-my-tasks" id="dash-my-tasks"></ul>
               </div>
             </div>
           </section>
@@ -619,6 +615,7 @@
 
     <script src="app.js"></script>
     <script src="team.js"></script>
+    <script src="realtime.js"></script>
     <script src="org.js"></script>
   </body>
 </html>

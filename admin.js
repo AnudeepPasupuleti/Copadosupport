@@ -317,8 +317,6 @@ addForm.addEventListener("submit", async (e) => {
 userTableBody.addEventListener("click", async (e) => {
   const impersonateBtn = e.target.closest("[data-impersonate]");
   if (impersonateBtn) {
-    const email = impersonateBtn.dataset.email || "this user";
-    if (!confirm(`Log in as ${email}? You can return to Admin from the yellow banner.`)) return;
     try {
       await api(`/api/admin/users/${impersonateBtn.dataset.impersonate}/impersonate`, {
         method: "POST",

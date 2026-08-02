@@ -30,6 +30,9 @@ def client(tmp_path, monkeypatch):
     import backend.admin as admin
     import backend.queue as queue
     import backend.org as org
+    import backend.workspaces as workspaces
+    import backend.events as events
+    import backend.sse as sse
     import backend.main as main
 
     importlib.reload(config)
@@ -38,8 +41,11 @@ def client(tmp_path, monkeypatch):
     importlib.reload(seed)
     importlib.reload(auth)
     importlib.reload(admin)
+    importlib.reload(workspaces)
+    importlib.reload(events)
     importlib.reload(queue)
     importlib.reload(org)
+    importlib.reload(sse)
     importlib.reload(main)
 
     with TestClient(main.app) as c:
@@ -166,7 +172,9 @@ def test_team_queue_dashboard_and_notifications(client):
 
     listed = client.get("/api/queue/tasks")
     assert listed.status_code == 200
-    assert any(t["id"] == task_id for t in listed.json())
+    listed_body = listed.json()
+    listed_items = listed_body["items"] if isinstance(listed_body, dict) else listed_body
+    assert any(t["id"] == task_id for t in listed_items)
 
     comment = client.post(
         f"/api/queue/tasks/{task_id}/comments",
@@ -174,6 +182,7 @@ def test_team_queue_dashboard_and_notifications(client):
     )
     assert comment.status_code == 200
     assert len(comment.json()["comments"]) == 1
+    current_version = comment.json()["version"]
 
     dash = client.get("/api/queue/dashboard")
     assert dash.status_code == 200
@@ -193,7 +202,7 @@ def test_team_queue_dashboard_and_notifications(client):
 
     patched = client.patch(
         f"/api/queue/tasks/{task_id}",
-        json={"assignee_id": agent["id"]},
+        json={"assignee_id": agent["id"], "version": current_version},
     )
     assert patched.status_code == 200
     assert patched.json()["assignee"]["id"] == agent["id"]
@@ -464,3 +473,76 @@ def test_org_chart_permissions_and_cycle(client):
     assert chart2.status_code == 200
     assert chart2.json()["can_edit"] is True
     assert any(t["id"] == team_id for t in chart2.json()["teams"])
+
+
+def test_phase4_versioning_activity_idempotency(client):
+    login = client.post("/auth/login", json={"username": "admin", "password": "admin"})
+    assert login.status_code == 200
+
+    created = client.post(
+        "/api/queue/tasks",
+        headers={"Idempotency-Key": "create-case-1"},
+        json={"title": "Versioned case", "status": "new", "priority": "medium"},
+    )
+    assert created.status_code == 200
+    task = created.json()
+    assert task["version"] == 1
+    task_id = task["id"]
+
+    # Idempotent replay returns same payload
+    again = client.post(
+        "/api/queue/tasks",
+        headers={"Idempotency-Key": "create-case-1"},
+        json={"title": "Versioned case", "status": "new", "priority": "medium"},
+    )
+    assert again.status_code == 200
+    assert again.json()["id"] == task_id
+
+    ok = client.patch(
+        f"/api/queue/tasks/{task_id}",
+        json={"status": "investigating", "version": 1},
+    )
+    assert ok.status_code == 200
+    assert ok.json()["version"] == 2
+    assert ok.json()["status"] == "investigating"
+
+    conflict = client.patch(
+        f"/api/queue/tasks/{task_id}",
+        json={"status": "waiting_customer", "version": 1},
+    )
+    assert conflict.status_code == 409
+    assert conflict.json()["code"] == "version_conflict"
+    assert conflict.json()["task"]["version"] == 2
+
+    acts = client.get(f"/api/queue/tasks/{task_id}/activities")
+    assert acts.status_code == 200
+    types = [a["type"] for a in acts.json()["items"]]
+    assert "case.created" in types
+    assert "case.updated" in types
+
+    listed = client.get("/api/queue/tasks?limit=10")
+    assert listed.status_code == 200
+    body = listed.json()
+    assert "items" in body
+    assert "next_cursor" in body
+
+    mentionee = client.post(
+        "/api/admin/users",
+        json={
+            "email": "peer@example.com",
+            "name": "Peer",
+            "auth_type": "password",
+            "username": "peer1",
+            "password": "peerpass1",
+            "role": "member",
+        },
+    )
+    assert mentionee.status_code == 200
+    peer_id = mentionee.json()["id"]
+
+    commented = client.post(
+        f"/api/queue/tasks/{task_id}/comments",
+        json={"body": "Please check this", "mention_ids": [peer_id]},
+    )
+    assert commented.status_code == 200
+    assert any(c.get("mention_ids") == [peer_id] for c in commented.json()["comments"])

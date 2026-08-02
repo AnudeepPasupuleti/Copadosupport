@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from .db import OrgTeam, OrgTeamMember, User, get_db
 from .deps import get_current_user, is_manager_or_admin, user_to_dict
+from .workspaces import get_default_workspace
 
 router = APIRouter(prefix="/api/org", tags=["org"])
 
@@ -160,7 +161,11 @@ def create_team(
         raise HTTPException(status_code=400, detail="Name required")
     if db.query(OrgTeam).filter(OrgTeam.name == name).first():
         raise HTTPException(status_code=400, detail="Team name already exists")
-    team = OrgTeam(name=name, description=(body.description or "").strip())
+    team = OrgTeam(
+        workspace_id=get_default_workspace(db).id,
+        name=name,
+        description=(body.description or "").strip(),
+    )
     db.add(team)
     db.commit()
     db.refresh(team)

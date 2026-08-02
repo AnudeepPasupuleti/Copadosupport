@@ -18,6 +18,20 @@ CHECKLIST_SEED_PATH = ROOT / "data" / "checklist.json"
 USER1_EMAIL = os.getenv("USER1_EMAIL", "apasupuleti@copado.com")
 USER1_GITHUB_LOGIN = os.getenv("USER1_GITHUB_LOGIN", "")
 ENV = os.getenv("ENV", os.getenv("ENVIRONMENT", "development")).lower()
+FEATURE_REALTIME_SSE = os.getenv("FEATURE_REALTIME_SSE", "true").lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
+)
+FEATURE_MENTIONS = os.getenv("FEATURE_MENTIONS", "true").lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
+)
+DEFAULT_WORKSPACE_SLUG = os.getenv("DEFAULT_WORKSPACE_SLUG", "default")
+DEFAULT_WORKSPACE_TIMEZONE = os.getenv("DEFAULT_WORKSPACE_TIMEZONE", "Asia/Kolkata")
 
 
 def normalize_database_url(url: str) -> str:

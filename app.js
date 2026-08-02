@@ -38,8 +38,6 @@ const exportBtn = document.getElementById("export-btn");
 const importBtn = document.getElementById("import-btn");
 const importFile = document.getElementById("import-file");
 const confettiEl = document.getElementById("confetti");
-const rolloverBanner = document.getElementById("rollover-banner");
-const rolloverText = document.getElementById("rollover-text");
 const todayView = document.getElementById("today-view");
 const historyView = document.getElementById("history-view");
 const historyList = document.getElementById("history-list");
@@ -874,35 +872,16 @@ function getVisibleItems() {
   });
 }
 
-function getCarriedCount() {
-  return state.items.filter((i) => i.carriedFrom).length;
-}
-
 function carriedLabel(item) {
   if (!item.carriedFrom) return null;
-  return `Incomplete on ${formatDisplayDate(item.carriedFrom, "short")}`;
-}
-
-function updateRolloverBanner() {
-  const carried = state.items.filter((i) => i.carriedFrom);
-  const uncheckedCarried = carried.filter((i) => !i.checked);
-
-  if (uncheckedCarried.length === 0) {
-    rolloverBanner.hidden = true;
-    return;
-  }
-
-  const dates = [...new Set(uncheckedCarried.map((i) => i.carriedFrom))];
-  const datePhrase =
-    dates.length === 1
-      ? formatDisplayDate(dates[0], "short")
-      : "previous days";
-
-  rolloverBanner.hidden = false;
-  rolloverText.textContent =
-    uncheckedCarried.length === 1
-      ? `1 item carried over from ${datePhrase}`
-      : `${uncheckedCarried.length} items carried over from ${datePhrase}`;
+  const fromKey = item.carriedFrom;
+  const activeKey = state.activeDate || todayKey();
+  const from = new Date(`${fromKey}T12:00:00`);
+  const active = new Date(`${activeKey}T12:00:00`);
+  const diffDays = Math.round((active - from) / 86400000);
+  const when = diffDays === 1 ? "yesterday" : formatDisplayDate(fromKey, "short");
+  if (item.checked) return `Was from ${when}`;
+  return `From ${when}`;
 }
 
 function updateProgress() {
@@ -940,8 +919,6 @@ function updateProgress() {
   if (progressBarFill) {
     progressBarFill.style.width = `${percent}%`;
   }
-
-  updateRolloverBanner();
 
   if (allDone && !lastCelebrated) {
     lastCelebrated = true;
@@ -1532,9 +1509,7 @@ function renderTodayList() {
     }
     const carried = carriedLabel(item);
     if (carried) {
-      metaParts.push(
-        item.checked ? `Was incomplete · ${formatDisplayDate(item.carriedFrom, "short")}` : carried
-      );
+      metaParts.push(carried);
     }
 
     if (metaParts.length) {
@@ -1707,6 +1682,9 @@ function render() {
 window.ChecklistApp = {
   setView,
   closeSidebar,
+  getCurrentUser() {
+    return currentUser;
+  },
   setPageTitle(title) {
     if (pageTitle) pageTitle.textContent = title;
   },

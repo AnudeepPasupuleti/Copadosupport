@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from . import config
-from .db import User, UserState, get_db, get_setting, set_setting
+from .db import User, UserState, WorkspaceMember, get_db, get_setting, set_setting
 from .deps import (
     get_current_user,
     is_admin_user,
@@ -15,6 +15,7 @@ from .deps import (
     user_to_dict,
 )
 from .seed import empty_state, hash_password, verify_password
+from .workspaces import get_default_workspace
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -168,6 +169,15 @@ def create_user(
                 payload = empty_state()
 
     db.add(UserState(user_id=user.id, payload=json.dumps(payload)))
+    ws = get_default_workspace(db)
+    db.add(
+        WorkspaceMember(
+            workspace_id=ws.id,
+            user_id=user.id,
+            role=role,
+            active=True,
+        )
+    )
     db.commit()
     db.refresh(user)
     return user_to_dict(user)

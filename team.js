@@ -15,6 +15,8 @@
   let meta = null;
   let teammates = [];
   let editingTaskId = null;
+  let editingTaskVersion = null;
+  let openTaskId = null;
   let notifTimer = null;
   let queueScope = "all";
 
@@ -35,12 +37,22 @@
       location.href = "/login";
       return null;
     }
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 409) {
+      const err = new Error(data.message || data.detail || "Conflict");
+      err.code = data.code;
+      err.task = data.task;
+      err.status = 409;
+      throw err;
+    }
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || "Request failed");
+      const detail = data.detail;
+      const msg =
+        typeof detail === "string" ? detail : Array.isArray(detail) ? detail[0]?.msg : null;
+      throw new Error(msg || data.message || "Request failed");
     }
     if (res.status === 204) return null;
-    return res.json();
+    return data;
   }
 
   function escapeHtml(text) {
@@ -217,17 +229,16 @@
   function renderMyTasksCard(myTasks) {
     const list = document.getElementById("dash-my-tasks");
     if (!list) return;
-    const items = [...(myTasks.open || []), ...(myTasks.done || [])].slice(0, 12);
+    const items = (myTasks.open || []).slice(0, 12);
     if (!items.length) {
-      list.innerHTML = `<li class="upcoming-empty">No personal tasks yet. Add some under My Tasks.</li>`;
+      list.innerHTML = `<li class="upcoming-empty">No open personal tasks. Add some under My Tasks.</li>`;
       return;
     }
     list.innerHTML = items
       .map((item) => {
         const due = item.dueDate ? `<span class="dash-task-due">${escapeHtml(item.dueDate)}</span>` : "";
-        const checked = item.checked ? "is-done" : "";
-        return `<li class="dash-task-row ${checked}">
-          <span class="dash-task-check" aria-hidden="true">${item.checked ? "✓" : "○"}</span>
+        return `<li class="dash-task-row">
+          <span class="dash-task-check" aria-hidden="true">○</span>
           <span class="dash-task-text">${escapeHtml(item.text || "Untitled")}</span>
           ${due}
         </li>`;
@@ -282,8 +293,9 @@
     if (priority) params.set("priority", priority);
     if (queueScope === "all" && assignee) params.set("assignee_id", assignee);
 
-    const tasks = await api(`/api/queue/tasks?${params}`);
-    if (!tasks) return;
+    const data = await api(`/api/queue/tasks?${params}`);
+    if (!data) return;
+    const tasks = Array.isArray(data) ? data : data.items || [];
     queueTbody.innerHTML = "";
     const empty = document.getElementById("queue-empty");
     if (empty) {
@@ -353,7 +365,188 @@
     }
   }
 
+  function currentUserId() {
+    return window.ChecklistApp?.getCurrentUser?.()?.id ?? null;
+  }
+
+  function mentionableTeammates() {
+    const me = currentUserId();
+    return (teammates || []).filter((u) => u && u.id !== me);
+  }
+
+  function mentionHandle(user) {
+    const emailLocal = (user.email || "").split("@")[0];
+    if (emailLocal) return emailLocal;
+    return (user.name || `user${user.id}`).replace(/\s+/g, "");
+  }
+
+  function mentionAliases(user) {
+    const aliases = new Set();
+    const handle = mentionHandle(user);
+    if (handle) aliases.add(handle);
+    if (user.name) {
+      aliases.add(user.name);
+      aliases.add(user.name.replace(/\s+/g, ""));
+      user.name.split(/\s+/).filter(Boolean).forEach((part) => aliases.add(part));
+    }
+    return [...aliases];
+  }
+
+  function formatCommentBody(body, mentionIds) {
+    const raw = body || "";
+    const people = (teammates || []).filter((u) => (mentionIds || []).includes(u.id));
+    const tokens = people
+      .flatMap((u) => mentionAliases(u).map((alias) => ({ alias, user: u })))
+      .sort((a, b) => b.alias.length - a.alias.length);
+    if (!tokens.length) return escapeHtml(raw);
+
+    let i = 0;
+    let out = "";
+    while (i < raw.length) {
+      if (raw[i] === "@") {
+        const rest = raw.slice(i + 1);
+        const hit = tokens.find((t) => rest.toLowerCase().startsWith(t.alias.toLowerCase()));
+        if (hit) {
+          const label = hit.user.name || hit.alias;
+          out += `<span class="comment-mention">@${escapeHtml(label)}</span>`;
+          i += 1 + hit.alias.length;
+          continue;
+        }
+      }
+      out += escapeHtml(raw[i]);
+      i += 1;
+    }
+    return out;
+  }
+
+  function extractMentionIds(text) {
+    const ids = new Set();
+    const people = mentionableTeammates();
+    const tokens = people
+      .flatMap((u) => mentionAliases(u).map((alias) => ({ alias, id: u.id })))
+      .sort((a, b) => b.alias.length - a.alias.length);
+    for (let i = 0; i < text.length; i += 1) {
+      if (text[i] !== "@") continue;
+      const rest = text.slice(i + 1);
+      const hit = tokens.find((t) => rest.toLowerCase().startsWith(t.alias.toLowerCase()));
+      if (hit) {
+        ids.add(hit.id);
+        i += hit.alias.length;
+      }
+    }
+    return [...ids];
+  }
+
+  function bindMentionAutocomplete(textarea, menu) {
+    let activeIndex = 0;
+    let matches = [];
+    let queryStart = -1;
+
+    function hideMenu() {
+      menu.hidden = true;
+      menu.innerHTML = "";
+      matches = [];
+      queryStart = -1;
+    }
+
+    function mentionQueryAtCursor() {
+      const value = textarea.value;
+      const caret = textarea.selectionStart ?? 0;
+      const before = value.slice(0, caret);
+      const at = before.lastIndexOf("@");
+      if (at < 0) return null;
+      if (at > 0 && !/\s/.test(before[at - 1])) return null;
+      const query = before.slice(at + 1);
+      if (/\n/.test(query) || query.length > 40) return null;
+      if (query.includes("  ")) return null;
+      return { at, query };
+    }
+
+    function filteredPeople(query) {
+      const q = (query || "").trim().toLowerCase();
+      return mentionableTeammates().filter((u) => {
+        if (!q) return true;
+        const hay = `${u.name || ""} ${u.email || ""} ${mentionHandle(u)}`.toLowerCase();
+        return hay.includes(q) || mentionAliases(u).some((a) => a.toLowerCase().startsWith(q));
+      });
+    }
+
+    function renderMenu() {
+      if (!matches.length) {
+        hideMenu();
+        return;
+      }
+      activeIndex = Math.max(0, Math.min(activeIndex, matches.length - 1));
+      menu.innerHTML = matches
+        .map(
+          (u, idx) => `<button type="button" class="mention-suggest-item${
+            idx === activeIndex ? " is-active" : ""
+          }" data-idx="${idx}" role="option">
+            <strong>${escapeHtml(u.name || mentionHandle(u))}</strong>
+            <span>${escapeHtml(u.email || "")}</span>
+          </button>`
+        )
+        .join("");
+      menu.hidden = false;
+      menu.querySelectorAll(".mention-suggest-item").forEach((btn) => {
+        btn.addEventListener("mousedown", (e) => {
+          e.preventDefault();
+          insertMention(matches[Number(btn.dataset.idx)]);
+        });
+      });
+    }
+
+    function insertMention(user) {
+      if (!user || queryStart < 0) return;
+      const caret = textarea.selectionStart ?? 0;
+      const before = textarea.value.slice(0, queryStart);
+      const after = textarea.value.slice(caret);
+      const label = (user.name || "").trim().split(/\s+/)[0] || mentionHandle(user);
+      const token = `@${label}`;
+      textarea.value = `${before}${token} ${after}`;
+      const next = before.length + token.length + 1;
+      textarea.focus();
+      textarea.setSelectionRange(next, next);
+      hideMenu();
+    }
+
+    function refreshFromCaret() {
+      const found = mentionQueryAtCursor();
+      if (!found) {
+        hideMenu();
+        return;
+      }
+      queryStart = found.at;
+      matches = filteredPeople(found.query).slice(0, 8);
+      activeIndex = 0;
+      renderMenu();
+    }
+
+    textarea.addEventListener("input", refreshFromCaret);
+    textarea.addEventListener("click", refreshFromCaret);
+    textarea.addEventListener("blur", () => setTimeout(hideMenu, 120));
+    textarea.addEventListener("keydown", (e) => {
+      if (menu.hidden || !matches.length) return;
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        activeIndex = (activeIndex + 1) % matches.length;
+        renderMenu();
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        activeIndex = (activeIndex - 1 + matches.length) % matches.length;
+        renderMenu();
+      } else if (e.key === "Enter" || e.key === "Tab") {
+        e.preventDefault();
+        insertMention(matches[activeIndex]);
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        hideMenu();
+      }
+    });
+  }
+
   function renderTaskDetail(task) {
+    openTaskId = task.id;
     const comments = (task.comments || [])
       .map(
         (c) => `<li class="comment-item">
@@ -361,7 +554,7 @@
             <strong>${escapeHtml((c.author && c.author.name) || "User")}</strong>
             <span>${escapeHtml(formatWhen(c.created_at))}</span>
           </div>
-          <p>${escapeHtml(c.body)}</p>
+          <p class="comment-body">${formatCommentBody(c.body, c.mention_ids)}</p>
         </li>`
       )
       .join("");
@@ -381,9 +574,16 @@
           <h3>Comments (${(task.comments || []).length})</h3>
           <ul class="comment-list">${comments || '<li class="upcoming-empty">No comments yet.</li>'}</ul>
           <form id="comment-form" class="comment-form">
-            <textarea id="comment-body" class="diary-textarea" rows="3" placeholder="Add a comment…" required></textarea>
+            <div class="comment-compose">
+              <textarea id="comment-body" class="diary-textarea" rows="3" placeholder="Add a comment… Type @ to mention someone" required></textarea>
+              <div id="mention-suggest" class="mention-suggest" hidden role="listbox"></div>
+            </div>
             <button type="submit" class="btn btn-primary">Comment</button>
           </form>
+        </section>
+        <section class="task-section">
+          <h3>Activity</h3>
+          <ul class="activity-list" id="task-activity-list"><li class="upcoming-empty">Loading…</li></ul>
         </section>
       </div>
       <aside class="task-detail-meta">
@@ -393,24 +593,54 @@
           <dt>Assignee</dt><dd>${escapeHtml((task.assignee && task.assignee.name) || "Unassigned")}</dd>
           <dt>Reporter</dt><dd>${escapeHtml((task.reporter && task.reporter.name) || "—")}</dd>
           <dt>Due</dt><dd>${escapeHtml(task.due_date || "—")}</dd>
+          <dt>Version</dt><dd>${escapeHtml(String(task.version || 1))}</dd>
           <dt>Tags</dt><dd>${escapeHtml(task.tags || "—")}</dd>
         </dl>
       </aside>`;
 
     document.getElementById("task-edit-btn")?.addEventListener("click", () => openTaskModal(task));
+    const commentBody = document.getElementById("comment-body");
+    const mentionMenu = document.getElementById("mention-suggest");
+    if (commentBody && mentionMenu) bindMentionAutocomplete(commentBody, mentionMenu);
+
     document.getElementById("comment-form")?.addEventListener("submit", async (e) => {
       e.preventDefault();
       const body = document.getElementById("comment-body").value.trim();
       if (!body) return;
+      const mention_ids = extractMentionIds(body);
       const updated = await api(`/api/queue/tasks/${task.id}/comments`, {
         method: "POST",
-        body: JSON.stringify({ body }),
+        body: JSON.stringify({ body, mention_ids }),
       });
       if (updated) {
         renderTaskDetail(updated);
         refreshNotifications();
       }
     });
+    loadActivities(task.id);
+  }
+
+  async function loadActivities(taskId) {
+    const list = document.getElementById("task-activity-list");
+    if (!list) return;
+    try {
+      const data = await api(`/api/queue/tasks/${taskId}/activities`);
+      const items = data?.items || [];
+      if (!items.length) {
+        list.innerHTML = `<li class="upcoming-empty">No activity yet.</li>`;
+        return;
+      }
+      list.innerHTML = items
+        .map(
+          (a) => `<li class="activity-item">
+            <strong>${escapeHtml(a.type)}</strong>
+            <span>${escapeHtml(formatWhen(a.occurred_at))}</span>
+          </li>`
+        )
+        .join("");
+    } catch {
+      list.innerHTML = `<li class="upcoming-empty">Could not load activity.</li>`;
+    }
   }
 
   function formatWhen(iso) {
@@ -429,6 +659,7 @@
 
   function openTaskModal(task = null) {
     editingTaskId = task ? task.id : null;
+    editingTaskVersion = task ? task.version || 1 : null;
     document.getElementById("task-modal-title").textContent = task ? "Edit ticket" : "New ticket";
     document.getElementById("task-title").value = task?.title || "";
     document.getElementById("task-description").value = task?.description || "";
@@ -444,6 +675,7 @@
     const modal = document.getElementById("task-modal");
     if (modal) modal.hidden = true;
     editingTaskId = null;
+    editingTaskVersion = null;
   }
 
   async function saveTask(e) {
@@ -462,6 +694,7 @@
     try {
       let task;
       if (editingTaskId) {
+        payload.version = editingTaskVersion;
         task = await api(`/api/queue/tasks/${editingTaskId}`, {
           method: "PATCH",
           body: JSON.stringify(payload),
@@ -476,6 +709,12 @@
       refreshNotifications();
       if (task) openTaskDetail(task.id);
     } catch (err) {
+      if (err.status === 409 && err.task) {
+        alert(err.message || "This ticket was updated by someone else. Reloading…");
+        closeTaskModal();
+        openTaskDetail(err.task.id);
+        return;
+      }
       alert(err.message || "Could not save ticket");
     }
   }
@@ -585,7 +824,28 @@
     });
 
     refreshNotifications();
-    notifTimer = setInterval(refreshNotifications, 30000);
+    notifTimer = setInterval(() => {
+      if (!window.RealtimeApp || !window.RealtimeApp.isConnected()) {
+        refreshNotifications();
+      }
+    }, 30000);
+  }
+
+  function onRealtimeEvent(envelope) {
+    const type = envelope?.event_type || "";
+    if (queueView && !queueView.hidden) loadQueue();
+    if (dashboardView && !dashboardView.hidden) showDashboard();
+    if (
+      openTaskId &&
+      taskDetailView &&
+      !taskDetailView.hidden &&
+      (type.startsWith("case.") || type.startsWith("comment.") || type.startsWith("mention."))
+    ) {
+      const agg = envelope.aggregate_id;
+      if (!agg || Number(agg) === Number(openTaskId)) {
+        openTaskDetail(openTaskId);
+      }
+    }
   }
 
   window.TeamApp = {
@@ -593,6 +853,8 @@
     hideTeamViews,
     openTaskDetail,
     refreshNotifications,
+    onRealtimeEvent,
+    loadQueue,
   };
 
   if (document.readyState === "loading") {
