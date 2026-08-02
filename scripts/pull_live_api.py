@@ -5,7 +5,7 @@ No Render Shell required. Does not redeploy (redeploy would wipe Free SQLite).
 
 Usage:
   python scripts/pull_live_api.py \\
-    --base-url https://copadosupport.onrender.com \\
+    --base-url https://teamcopa.onrender.com \\
     --admin-user admin \\
     --admin-password 'YOUR_PASSWORD' \\
     -o data/backups/live-api-dump.json
@@ -164,7 +164,7 @@ def pull(base_url: str, username: str, password: str) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--base-url", default="https://copadosupport.onrender.com")
+    parser.add_argument("--base-url", default="https://teamcopa.onrender.com")
     parser.add_argument("--admin-user", default="admin")
     parser.add_argument("--admin-password", required=True)
     parser.add_argument("-o", "--output", type=Path, required=True)

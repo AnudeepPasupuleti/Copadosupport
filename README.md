@@ -126,7 +126,7 @@ SQLite on Render Free is wiped on every deploy. Use Postgres instead:
 2. Open the Postgres service → copy **Internal Database URL** (or External if needed).
 3. On your **Web Service** → **Environment**:
    - `DATABASE_URL` = that Postgres URL (paste as-is; `postgres://` is normalized automatically)
-   - Keep `BASE_URL=https://copadosupport.onrender.com` (or your URL)
+   - Keep `BASE_URL=https://teamcopa.onrender.com` (or your URL)
 4. **Remove** any old `DATABASE_URL=sqlite:///…` from the web service.
 5. Redeploy the web service. Tables are created on startup; Admin/users seed into Postgres.
 6. Link the DB to the web service (Render “Connect” / same account region) so Internal URL resolves.
@@ -153,7 +153,7 @@ After that, Team Queue and checklists persist across deploys.
 2. **Live via APIs** (uses Admin login; pulls users + Team Queue + Admin checklist):
    ```bash
    python scripts/pull_live_api.py \
-     --base-url https://copadosupport.onrender.com \
+     --base-url https://teamcopa.onrender.com \
      --admin-password 'YOUR_ADMIN_PASSWORD' \
      -o data/backups/live-api-dump.json
    ```
