@@ -956,12 +956,28 @@ function setView(view) {
   if (tasksToolbar) tasksToolbar.hidden = view !== "today";
   if (dateLabel) dateLabel.hidden = view === "profile";
 
-  if (window.OrgApp) window.OrgApp.hideOrgView();
   if (window.TeamApp) window.TeamApp.hideTeamViews();
 
   if (view === "org" && currentUser && currentUser.can_view_org === false) {
     setView("dashboard");
     return;
+  }
+
+  if (view === "org") {
+    if (!window.OrgApp) {
+      console.error("Org Chart script failed to load");
+      if (pageTitle) pageTitle.textContent = "Org Chart";
+      const orgViewEl = document.getElementById("org-view");
+      if (orgViewEl) {
+        orgViewEl.hidden = false;
+        orgViewEl.innerHTML =
+          '<p class="login-error">Org Chart failed to load. Hard-refresh the page and try again.</p>';
+      }
+      closeSidebar();
+      return;
+    }
+  } else if (window.OrgApp) {
+    window.OrgApp.hideOrgView();
   }
 
   if (window.OrgApp && window.OrgApp.onAppView(view)) {

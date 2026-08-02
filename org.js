@@ -182,13 +182,26 @@
     const profileView = document.getElementById("profile-view");
     const dashboardView = document.getElementById("dashboard-view");
     const queueView = document.getElementById("queue-view");
+    const taskDetailView = document.getElementById("task-detail-view");
     if (todayView) todayView.hidden = true;
     if (profileView) profileView.hidden = true;
     if (dashboardView) dashboardView.hidden = true;
     if (queueView) queueView.hidden = true;
+    if (taskDetailView) taskDetailView.hidden = true;
     if (window.TeamApp) window.TeamApp.hideTeamViews();
+    if (!orgView) return;
     orgView.hidden = false;
-    await loadChart();
+    const treeEl = document.getElementById("org-tree");
+    const teamsEl = document.getElementById("org-teams");
+    if (treeEl) treeEl.innerHTML = `<p class="org-empty">Loading…</p>`;
+    if (teamsEl) teamsEl.innerHTML = `<p class="org-empty">Loading…</p>`;
+    try {
+      await loadChart();
+    } catch (err) {
+      const msg = escapeHtml(err.message || "Could not load org chart");
+      if (treeEl) treeEl.innerHTML = `<p class="org-empty">${msg}</p>`;
+      if (teamsEl) teamsEl.innerHTML = "";
+    }
   }
 
   function openTeamModal(teamId) {

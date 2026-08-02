@@ -2597,6 +2597,7 @@ html[data-theme="dark"] .login-body {
 .task-detail-view[hidden],
 .queue-view[hidden],
 .dashboard-view[hidden],
+.org-view[hidden],
 .coming-soon-view[hidden],
 .diary-view[hidden],
 .history-view[hidden],

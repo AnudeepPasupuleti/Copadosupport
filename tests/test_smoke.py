@@ -58,6 +58,13 @@ def test_health(client):
     assert res.json()["ok"] is True
 
 
+def test_static_app_scripts(client):
+    for path in ("/app.js", "/team.js", "/org.js", "/realtime.js", "/styles.css"):
+        res = client.get(path)
+        assert res.status_code == 200, path
+        assert len(res.content) > 100
+
+
 def test_admin_login_and_state(client):
     assert client.get("/api/me").status_code == 401
 

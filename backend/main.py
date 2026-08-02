@@ -236,6 +236,11 @@ def team_js():
     return FileResponse(ROOT / "team.js", media_type="application/javascript")
 
 
+@app.get("/org.js")
+def org_js():
+    return FileResponse(ROOT / "org.js", media_type="application/javascript")
+
+
 @app.get("/realtime.js")
 def realtime_js():
     return FileResponse(ROOT / "realtime.js", media_type="application/javascript")
