@@ -335,8 +335,15 @@ def _table_columns(conn, table: str) -> set[str]:
 def _add_column(conn, table: str, ddl: str) -> None:
     cols = _table_columns(conn, table)
     col_name = ddl.split()[0]
-    if col_name not in cols:
+    if col_name not in cols and col_name.lower() not in {c.lower() for c in cols}:
         conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {ddl}"))
+
+
+def _datetime_type() -> str:
+    """SQLite accepts DATETIME; Postgres needs TIMESTAMP WITH TIME ZONE."""
+    if engine.dialect.name == "postgresql":
+        return "TIMESTAMP WITH TIME ZONE"
+    return "DATETIME"
 
 
 def _migrate_schema() -> None:
@@ -385,13 +392,14 @@ def _migrate_schema() -> None:
             conn.execute(text("ALTER TABLE users ADD COLUMN reports_to_id INTEGER"))
 
         # Phase 4 columns on existing tables
+        dt = _datetime_type()
         if "team_tasks" in _existing_tables(conn):
             _add_column(conn, "team_tasks", "workspace_id INTEGER")
             _add_column(conn, "team_tasks", "team_id INTEGER")
-            _add_column(conn, "team_tasks", "due_at DATETIME")
+            _add_column(conn, "team_tasks", f"due_at {dt}")
             _add_column(conn, "team_tasks", "version INTEGER NOT NULL DEFAULT 1")
-            _add_column(conn, "team_tasks", "resolved_at DATETIME")
-            _add_column(conn, "team_tasks", "closed_at DATETIME")
+            _add_column(conn, "team_tasks", f"resolved_at {dt}")
+            _add_column(conn, "team_tasks", f"closed_at {dt}")
 
         if "notifications" in _existing_tables(conn):
             _add_column(conn, "notifications", "workspace_id INTEGER")
