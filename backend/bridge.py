@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import uuid
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
 import httpx
@@ -562,6 +562,72 @@ def delete_user_stories(
     return {"ok": True, "deleted": deleted, "clearAll": False}
 
 
+def _normalize_status(status: Optional[str]) -> str:
+    return (
+        (status or "")
+        .strip()
+        .lower()
+        .replace("_", " ")
+        .replace("-", " ")
+    )
+
+
+def _parse_sf_datetime(value: Optional[str]) -> Optional[datetime]:
+    if not value:
+        return None
+    raw = value.strip()
+    if raw.endswith("Z"):
+        raw = raw[:-1] + "+00:00"
+    # Salesforce often returns +0000 instead of +00:00
+    if len(raw) >= 5 and raw[-5] in "+-" and raw[-3] != ":":
+        raw = f"{raw[:-2]}:{raw[-2:]}"
+    try:
+        dt = datetime.fromisoformat(raw)
+    except ValueError:
+        try:
+            dt = datetime.fromisoformat(raw[:19])
+        except ValueError:
+            return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+def _case_status_counts(cases: list[SfCase]) -> dict[str, int]:
+    open_n = 0
+    in_progress_n = 0
+    on_hold_n = 0
+    for c in cases:
+        n = _normalize_status(c.status)
+        if n == "open" or n == "new":
+            open_n += 1
+        elif (
+            "in progress" in n
+            or n in ("working", "investigating")
+            or n.startswith("in progress")
+        ):
+            in_progress_n += 1
+        elif "on hold" in n or "onhold" in n or n.startswith("waiting"):
+            on_hold_n += 1
+    return {
+        "open": open_n,
+        "inProgress": in_progress_n,
+        "onHold": on_hold_n,
+    }
+
+
+def _cases_aged_over_days(cases: list[SfCase], days: int = 30) -> int:
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    aged = 0
+    for c in cases:
+        if c.is_closed is True:
+            continue
+        created = _parse_sf_datetime(c.sf_created_date)
+        if created and created <= cutoff:
+            aged += 1
+    return aged
+
+
 @router.get("/dashboard")
 def bridge_dashboard(
     _user: User = Depends(require_bridge_viewer),
@@ -573,7 +639,7 @@ def bridge_dashboard(
     case_by_status = Counter((c.status or "Unknown") for c in cases)
     case_by_priority = Counter((c.priority or "Unknown") for c in cases)
     case_by_owner = Counter((c.case_owner or "Unknown") for c in cases)
-    open_cases = sum(1 for c in cases if c.is_closed is False)
+    status_counts = _case_status_counts(cases)
     closed_cases = sum(1 for c in cases if c.is_closed is True)
 
     us_by_status = Counter((s.status or "Unknown") for s in stories)
@@ -585,7 +651,10 @@ def bridge_dashboard(
     return {
         "cases": {
             "total": len(cases),
-            "open": open_cases,
+            "open": status_counts["open"],
+            "inProgress": status_counts["inProgress"],
+            "onHold": status_counts["onHold"],
+            "agedOver30Days": _cases_aged_over_days(cases, 30),
             "closed": closed_cases,
             "byStatus": dict(case_by_status.most_common(20)),
             "byPriority": dict(case_by_priority.most_common(20)),

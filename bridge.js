@@ -131,17 +131,11 @@
   function renderMetrics(dash) {
     if (!metricsEl) return;
     const cases = dash.cases || {};
-    const stories = dash.userStories || {};
     metricsEl.innerHTML = [
-      metricCard("Cases synced", cases.total ?? 0),
       metricCard("Open cases", cases.open ?? 0),
-      metricCard("User stories", stories.total ?? 0),
-      metricCard(
-        "Last sync",
-        dash.lastSyncedAt
-          ? new Date(dash.lastSyncedAt).toLocaleString()
-          : "Never"
-      ),
+      metricCard("In progress", cases.inProgress ?? 0),
+      metricCard("On hold", cases.onHold ?? 0),
+      metricCard("Aged over 30 days", cases.agedOver30Days ?? 0),
     ].join("");
   }
 
