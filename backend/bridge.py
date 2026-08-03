@@ -176,6 +176,28 @@ def _classify_object(object_api_name: Optional[str]) -> Optional[str]:
     return None
 
 
+def _case_stable_id(record: dict[str, Any]) -> Optional[str]:
+    """Prefer Salesforce Id; fall back to CaseNumber for custom SOQL without Id."""
+    sf_id = _str(record.get("Id"))
+    if sf_id:
+        return sf_id[:18]
+    case_number = _str(record.get("CaseNumber"))
+    if case_number:
+        # Synthetic key stays within sf_cases.sf_id String(18).
+        return f"CN{case_number}"[:18]
+    return None
+
+
+def _user_story_stable_id(record: dict[str, Any]) -> Optional[str]:
+    sf_id = _str(record.get("Id"))
+    if sf_id:
+        return sf_id[:18]
+    name = _str(record.get("Name"))
+    if name:
+        return f"US{name}"[:18]
+    return None
+
+
 def _upsert_case(
     db: Session,
     record: dict[str, Any],
@@ -183,15 +205,26 @@ def _upsert_case(
     org_id: Optional[str],
     export_id: Optional[str],
 ) -> bool:
-    sf_id = _str(record.get("Id"))
+    case_number = _str(record.get("CaseNumber"))
+    sf_id = _case_stable_id(record)
     if not sf_id:
         return False
+
     row = db.query(SfCase).filter(SfCase.sf_id == sf_id).one_or_none()
+    if not row and case_number:
+        # Re-link rows previously keyed only by CaseNumber / synthetic id.
+        row = (
+            db.query(SfCase)
+            .filter(SfCase.case_number == case_number)
+            .one_or_none()
+        )
     if not row:
         row = SfCase(sf_id=sf_id)
         db.add(row)
+    else:
+        row.sf_id = sf_id
     row.org_id = org_id or _str(record.get("OrgId"))
-    row.case_number = _str(record.get("CaseNumber"))
+    row.case_number = case_number
     row.subject = _str(record.get("Subject"))
     row.status = _str(record.get("Status"))
     row.priority = _str(record.get("Priority"))
@@ -212,13 +245,22 @@ def _upsert_user_story(
     org_id: Optional[str],
     export_id: Optional[str],
 ) -> bool:
-    sf_id = _str(record.get("Id"))
+    sf_id = _user_story_stable_id(record)
     if not sf_id:
         return False
+    name = _str(record.get("Name"))
     row = db.query(SfUserStory).filter(SfUserStory.sf_id == sf_id).one_or_none()
+    if not row and name:
+        row = (
+            db.query(SfUserStory)
+            .filter(SfUserStory.name == name)
+            .one_or_none()
+        )
     if not row:
         row = SfUserStory(sf_id=sf_id)
         db.add(row)
+    else:
+        row.sf_id = sf_id
     row.org_id = org_id
     row.name = _str(record.get("Name"))
     row.title = _str(
@@ -334,7 +376,10 @@ async def sync_from_bridge(
     cases_upserted = 0
     stories_upserted = 0
     jobs_processed = 0
+    jobs_found = len([j for j in jobs if isinstance(j, dict)])
     skipped = 0
+    records_seen = 0
+    records_skipped = 0
     errors: list[str] = []
 
     for job in jobs:
@@ -343,7 +388,7 @@ async def sync_from_bridge(
         status = (job.get("status") or "").lower()
         if status not in ("completed", "complete", "success", ""):
             # still try completed-ish jobs; skip failed
-            if status in ("failed", "error", "running"):
+            if status in ("failed", "error", "running", "processing", "queued"):
                 skipped += 1
                 continue
         object_api = job.get("objectApiName") or ""
@@ -376,22 +421,30 @@ async def sync_from_bridge(
             for record in batch.get("records") or []:
                 if not isinstance(record, dict):
                     continue
+                records_seen += 1
                 if kind == "case":
                     if _upsert_case(
                         db, record, org_id=org_id, export_id=str(export_id)
                     ):
                         cases_upserted += 1
+                    else:
+                        records_skipped += 1
                 else:
                     if _upsert_user_story(
                         db, record, org_id=org_id, export_id=str(export_id)
                     ):
                         stories_upserted += 1
+                    else:
+                        records_skipped += 1
 
     db.commit()
     return {
         "ok": True,
+        "jobsFound": jobs_found,
         "jobsProcessed": jobs_processed,
         "jobsSkipped": skipped,
+        "recordsSeen": records_seen,
+        "recordsSkipped": records_skipped,
         "casesUpserted": cases_upserted,
         "userStoriesUpserted": stories_upserted,
         "errors": errors[:10],

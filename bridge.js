@@ -154,10 +154,19 @@
     try {
       const result = await api("/api/bridge/sync", { method: "POST" });
       if (syncMsg) {
-        syncMsg.textContent =
+        const parts = [
           `Synced: ${result.casesUpserted || 0} case row(s), ` +
-          `${result.userStoriesUpserted || 0} user story row(s)` +
-          (result.errors?.length ? ` · ${result.errors.length} error(s)` : "");
+            `${result.userStoriesUpserted || 0} user story row(s)`,
+          `jobs ${result.jobsProcessed || 0}/${result.jobsFound || 0}`,
+          `records ${result.recordsSeen || 0}`,
+        ];
+        if (result.recordsSkipped) {
+          parts.push(`${result.recordsSkipped} skipped (no Id/CaseNumber)`);
+        }
+        if (result.errors?.length) {
+          parts.push(`${result.errors.length} error(s)`);
+        }
+        syncMsg.textContent = parts.join(" · ");
       }
       await refresh();
     } catch (err) {
