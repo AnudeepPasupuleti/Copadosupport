@@ -467,6 +467,7 @@ def list_cases(
     status: Optional[str] = None,
     owner: Optional[str] = None,
     q: Optional[str] = None,
+    metric: Optional[str] = None,
     limit: int = Query(500, ge=1, le=1000),
 ):
     query = db.query(SfCase).order_by(SfCase.synced_at.desc())
@@ -487,9 +488,18 @@ def list_cases(
                 SfCase.sf_id.ilike(like),
             )
         )
-    rows = query.limit(limit).all()
-    return {"cases": [_case_dict(r) for r in rows], "count": len(rows)}
-
+    metric_key = (metric or "all").strip().lower().replace("-", "_")
+    if metric_key and metric_key != "all":
+        rows = [
+            r for r in query.all() if _case_matches_metric(r, metric_key)
+        ][:limit]
+    else:
+        rows = query.limit(limit).all()
+    return {
+        "cases": [_case_dict(r) for r in rows],
+        "count": len(rows),
+        "metric": metric_key or "all",
+    }
 
 @router.post("/cases/delete")
 def delete_cases(
@@ -593,30 +603,45 @@ def _parse_sf_datetime(value: Optional[str]) -> Optional[datetime]:
     return dt.astimezone(timezone.utc)
 
 
-def _case_status_counts(cases: list[SfCase]) -> dict[str, int]:
-    open_n = 0
-    in_progress_n = 0
-    on_hold_n = 0
-    for c in cases:
-        n = _normalize_status(c.status)
-        if n == "open" or n == "new":
-            open_n += 1
-        elif (
+def _case_matches_metric(case: SfCase, metric: str) -> bool:
+    key = (metric or "all").strip().lower().replace("-", "_")
+    if key in ("", "all"):
+        return True
+    n = _normalize_status(case.status)
+    if key == "new":
+        return n in ("open", "new")
+    if key in ("in_progress", "inprogress"):
+        return (
             "in progress" in n
             or n in ("working", "investigating")
             or n.startswith("in progress")
-        ):
-            in_progress_n += 1
-        elif "on hold" in n or "onhold" in n or n.startswith("waiting"):
-            on_hold_n += 1
+        )
+    if key in ("on_hold", "onhold"):
+        return "on hold" in n or "onhold" in n or n.startswith("waiting")
+    if key in ("aged_30", "aged_over_30_days", "aged"):
+        if case.is_closed is True:
+            return False
+        created = _parse_sf_datetime(case.sf_created_date)
+        if not created:
+            return False
+        cutoff = datetime.now(timezone.utc) - timedelta(days=30)
+        return created <= cutoff
+    return True
+
+
+def _case_status_counts(cases: list[SfCase]) -> dict[str, int]:
     return {
-        "open": open_n,
-        "inProgress": in_progress_n,
-        "onHold": on_hold_n,
+        "open": sum(1 for c in cases if _case_matches_metric(c, "new")),
+        "inProgress": sum(
+            1 for c in cases if _case_matches_metric(c, "in_progress")
+        ),
+        "onHold": sum(1 for c in cases if _case_matches_metric(c, "on_hold")),
     }
 
 
 def _cases_aged_over_days(cases: list[SfCase], days: int = 30) -> int:
+    if days == 30:
+        return sum(1 for c in cases if _case_matches_metric(c, "aged_30"))
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
     aged = 0
     for c in cases:

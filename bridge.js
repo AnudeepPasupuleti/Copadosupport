@@ -24,6 +24,15 @@
   let casesSearchTimer = null;
   let usSearchTimer = null;
   let activeTab = "cases";
+  let activeMetric = "all";
+
+  const METRIC_LABELS = {
+    all: "All cases",
+    new: "New",
+    in_progress: "In progress",
+    on_hold: "On hold",
+    aged_30: "Aged over 30 days",
+  };
 
   function escapeHtml(str) {
     return String(str ?? "")
@@ -119,25 +128,57 @@
     el.classList.toggle("is-error", !!isError);
   }
 
-  function metricCard(label, value) {
+  function metricCard(label, value, metricKey) {
+    const isActive = activeMetric === metricKey;
     return (
-      `<div class="metric-card">` +
+      `<button type="button" class="metric-card bridge-metric-card${isActive ? " is-active" : ""}" data-bridge-metric="${escapeHtml(metricKey)}" aria-pressed="${isActive ? "true" : "false"}">` +
       `<p class="metric-label">${escapeHtml(label)}</p>` +
       `<p class="metric-value">${escapeHtml(String(value))}</p>` +
-      `</div>`
+      `</button>`
     );
+  }
+
+  function updateCasesPanelTitle() {
+    const title = document.querySelector("#bridge-panel-cases .bridge-panel-title");
+    if (!title) return;
+    const label = METRIC_LABELS[activeMetric] || "Cases";
+    title.textContent = activeMetric === "all" ? "Cases" : `Cases · ${label}`;
+  }
+
+  function setActiveMetric(metric, opts = {}) {
+    const next = METRIC_LABELS[metric] ? metric : "all";
+    activeMetric = next;
+    if (metricsEl) {
+      metricsEl.querySelectorAll("[data-bridge-metric]").forEach((el) => {
+        const isActive = el.getAttribute("data-bridge-metric") === activeMetric;
+        el.classList.toggle("is-active", isActive);
+        el.setAttribute("aria-pressed", isActive ? "true" : "false");
+      });
+    }
+    updateCasesPanelTitle();
+    if (opts.load !== false) {
+      setActiveTab("cases");
+      void loadCases().catch((err) => {
+        setPanelMessage(
+          casesMsg,
+          err instanceof Error ? err.message : "Failed to filter cases",
+          true
+        );
+      });
+    }
   }
 
   function renderMetrics(dash) {
     if (!metricsEl) return;
     const cases = dash.cases || {};
     metricsEl.innerHTML = [
-      metricCard("All cases", cases.total ?? 0),
-      metricCard("New", cases.open ?? 0),
-      metricCard("In progress", cases.inProgress ?? 0),
-      metricCard("On hold", cases.onHold ?? 0),
-      metricCard("Aged over 30 days", cases.agedOver30Days ?? 0),
+      metricCard("All cases", cases.total ?? 0, "all"),
+      metricCard("New", cases.open ?? 0, "new"),
+      metricCard("In progress", cases.inProgress ?? 0, "in_progress"),
+      metricCard("On hold", cases.onHold ?? 0, "on_hold"),
+      metricCard("Aged over 30 days", cases.agedOver30Days ?? 0, "aged_30"),
     ].join("");
+    updateCasesPanelTitle();
   }
 
   function badgeClassForStatus(status) {
@@ -228,10 +269,13 @@
     casesBody.innerHTML = "";
     if (casesCount) casesCount.textContent = String(cases.length);
     if (!cases.length) {
+      const filtered = activeMetric !== "all";
       casesBody.innerHTML = emptyStateRow(
         6,
-        "No cases synced yet",
-        "Export from the Data Bridge extension, then use Sync now."
+        filtered ? "No cases match this filter" : "No cases synced yet",
+        filtered
+          ? "Try another metric or clear search."
+          : "Export from the Data Bridge extension, then use Sync now."
       );
       updateDeleteButtons();
       return;
@@ -280,6 +324,9 @@
     const q = (casesQ?.value || "").trim();
     const qs = new URLSearchParams({ limit: "500" });
     if (q) qs.set("q", q);
+    if (activeMetric && activeMetric !== "all") {
+      qs.set("metric", activeMetric);
+    }
     const payload = await api(`/api/bridge/cases?${qs.toString()}`);
     renderCases(payload.cases || []);
   }
@@ -395,6 +442,16 @@
     btn.addEventListener("click", () => {
       setActiveTab(btn.getAttribute("data-bridge-tab"));
     });
+  });
+
+  metricsEl?.addEventListener("click", (e) => {
+    const btn = e.target instanceof Element
+      ? e.target.closest("[data-bridge-metric]")
+      : null;
+    if (!btn) return;
+    const metric = btn.getAttribute("data-bridge-metric");
+    if (!metric) return;
+    setActiveMetric(metric);
   });
 
   syncBtn?.addEventListener("click", () => {

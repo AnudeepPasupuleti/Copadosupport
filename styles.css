@@ -3293,6 +3293,30 @@ html[data-theme="dark"] .login-body {
   margin-bottom: 0;
 }
 
+.bridge-metric-card {
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+  transition: border-color 0.12s, box-shadow 0.12s, background 0.12s;
+}
+
+.bridge-metric-card:hover {
+  border-color: var(--accent);
+}
+
+.bridge-metric-card.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.bridge-metric-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .bridge-workspace {
   background: var(--surface);
   border: 1px solid var(--border);
