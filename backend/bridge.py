@@ -467,7 +467,7 @@ def list_cases(
     status: Optional[str] = None,
     owner: Optional[str] = None,
     q: Optional[str] = None,
-    limit: int = Query(200, ge=1, le=1000),
+    limit: int = Query(500, ge=1, le=1000),
 ):
     query = db.query(SfCase).order_by(SfCase.synced_at.desc())
     if status:

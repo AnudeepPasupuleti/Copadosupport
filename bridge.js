@@ -132,7 +132,7 @@
     if (!metricsEl) return;
     const cases = dash.cases || {};
     metricsEl.innerHTML = [
-      metricCard("Open cases", cases.open ?? 0),
+      metricCard("New", cases.open ?? 0),
       metricCard("In progress", cases.inProgress ?? 0),
       metricCard("On hold", cases.onHold ?? 0),
       metricCard("Aged over 30 days", cases.agedOver30Days ?? 0),
@@ -277,7 +277,7 @@
 
   async function loadCases() {
     const q = (casesQ?.value || "").trim();
-    const qs = new URLSearchParams({ limit: "200" });
+    const qs = new URLSearchParams({ limit: "500" });
     if (q) qs.set("q", q);
     const payload = await api(`/api/bridge/cases?${qs.toString()}`);
     renderCases(payload.cases || []);
