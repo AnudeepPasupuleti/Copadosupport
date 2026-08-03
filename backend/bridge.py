@@ -10,6 +10,8 @@ from typing import Any, Optional
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from . import config
@@ -26,6 +28,11 @@ _token_cache: dict[str, Any] = {
 
 CASE_OBJECTS = {"case"}
 USER_STORY_OBJECTS = {"user_story__c", "copado__user_story__c"}
+
+
+class BridgeDeleteBody(BaseModel):
+    ids: list[int] = Field(default_factory=list)
+    clearAll: bool = False
 
 
 def require_bridge_viewer(user: User = Depends(get_current_user)) -> User:
@@ -284,6 +291,7 @@ def _upsert_user_story(
 
 def _case_dict(row: SfCase) -> dict[str, Any]:
     return {
+        "id": row.id,
         "sfId": row.sf_id,
         "orgId": row.org_id,
         "caseNumber": row.case_number,
@@ -301,6 +309,7 @@ def _case_dict(row: SfCase) -> dict[str, Any]:
 
 def _user_story_dict(row: SfUserStory) -> dict[str, Any]:
     return {
+        "id": row.id,
         "sfId": row.sf_id,
         "orgId": row.org_id,
         "name": row.name,
@@ -457,15 +466,51 @@ def list_cases(
     db: Session = Depends(get_db),
     status: Optional[str] = None,
     owner: Optional[str] = None,
+    q: Optional[str] = None,
     limit: int = Query(200, ge=1, le=1000),
 ):
-    q = db.query(SfCase).order_by(SfCase.synced_at.desc())
+    query = db.query(SfCase).order_by(SfCase.synced_at.desc())
     if status:
-        q = q.filter(SfCase.status == status)
+        query = query.filter(SfCase.status == status)
     if owner:
-        q = q.filter(SfCase.case_owner == owner)
-    rows = q.limit(limit).all()
+        query = query.filter(SfCase.case_owner == owner)
+    term = (q or "").strip()
+    if term:
+        like = f"%{term}%"
+        query = query.filter(
+            or_(
+                SfCase.case_number.ilike(like),
+                SfCase.subject.ilike(like),
+                SfCase.status.ilike(like),
+                SfCase.priority.ilike(like),
+                SfCase.case_owner.ilike(like),
+                SfCase.sf_id.ilike(like),
+            )
+        )
+    rows = query.limit(limit).all()
     return {"cases": [_case_dict(r) for r in rows], "count": len(rows)}
+
+
+@router.post("/cases/delete")
+def delete_cases(
+    body: BridgeDeleteBody,
+    _user: User = Depends(require_bridge_viewer),
+    db: Session = Depends(get_db),
+):
+    if body.clearAll:
+        deleted = db.query(SfCase).delete(synchronize_session=False)
+        db.commit()
+        return {"ok": True, "deleted": deleted, "clearAll": True}
+    ids = sorted({int(i) for i in body.ids if int(i) > 0})
+    if not ids:
+        raise HTTPException(status_code=400, detail="Provide ids or clearAll")
+    deleted = (
+        db.query(SfCase)
+        .filter(SfCase.id.in_(ids))
+        .delete(synchronize_session=False)
+    )
+    db.commit()
+    return {"ok": True, "deleted": deleted, "clearAll": False}
 
 
 @router.get("/user-stories")
@@ -473,13 +518,48 @@ def list_user_stories(
     _user: User = Depends(require_bridge_viewer),
     db: Session = Depends(get_db),
     status: Optional[str] = None,
+    q: Optional[str] = None,
     limit: int = Query(200, ge=1, le=1000),
 ):
-    q = db.query(SfUserStory).order_by(SfUserStory.synced_at.desc())
+    query = db.query(SfUserStory).order_by(SfUserStory.synced_at.desc())
     if status:
-        q = q.filter(SfUserStory.status == status)
-    rows = q.limit(limit).all()
+        query = query.filter(SfUserStory.status == status)
+    term = (q or "").strip()
+    if term:
+        like = f"%{term}%"
+        query = query.filter(
+            or_(
+                SfUserStory.name.ilike(like),
+                SfUserStory.title.ilike(like),
+                SfUserStory.status.ilike(like),
+                SfUserStory.priority.ilike(like),
+                SfUserStory.sf_id.ilike(like),
+            )
+        )
+    rows = query.limit(limit).all()
     return {"userStories": [_user_story_dict(r) for r in rows], "count": len(rows)}
+
+
+@router.post("/user-stories/delete")
+def delete_user_stories(
+    body: BridgeDeleteBody,
+    _user: User = Depends(require_bridge_viewer),
+    db: Session = Depends(get_db),
+):
+    if body.clearAll:
+        deleted = db.query(SfUserStory).delete(synchronize_session=False)
+        db.commit()
+        return {"ok": True, "deleted": deleted, "clearAll": True}
+    ids = sorted({int(i) for i in body.ids if int(i) > 0})
+    if not ids:
+        raise HTTPException(status_code=400, detail="Provide ids or clearAll")
+    deleted = (
+        db.query(SfUserStory)
+        .filter(SfUserStory.id.in_(ids))
+        .delete(synchronize_session=False)
+    )
+    db.commit()
+    return {"ok": True, "deleted": deleted, "clearAll": False}
 
 
 @router.get("/dashboard")

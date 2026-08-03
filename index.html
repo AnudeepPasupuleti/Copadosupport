@@ -640,10 +640,28 @@
                   <h2 class="dash-card-title">Cases (synced)</h2>
                   <span class="hint" id="bridge-cases-count"></span>
                 </div>
+                <div class="queue-toolbar" style="margin-bottom: 10px; flex-wrap: wrap; gap: 8px">
+                  <input
+                    type="search"
+                    class="search-input"
+                    id="bridge-cases-q"
+                    placeholder="Search cases…"
+                    autocomplete="off"
+                  />
+                  <button type="button" class="text-action" id="bridge-cases-select-all">Select all</button>
+                  <button type="button" class="text-action danger" id="bridge-cases-delete" hidden>
+                    Delete selected
+                  </button>
+                  <button type="button" class="text-action danger" id="bridge-cases-clear">
+                    Clear all cases
+                  </button>
+                </div>
+                <p class="hint" id="bridge-cases-msg"></p>
                 <div class="table-wrap" style="overflow:auto; max-height: 360px">
                   <table id="bridge-cases-table">
                     <thead>
                       <tr>
+                        <th style="width:2rem"></th>
                         <th>Number</th>
                         <th>Subject</th>
                         <th>Status</th>
@@ -660,10 +678,28 @@
                   <h2 class="dash-card-title">User Stories (synced)</h2>
                   <span class="hint" id="bridge-us-count"></span>
                 </div>
+                <div class="queue-toolbar" style="margin-bottom: 10px; flex-wrap: wrap; gap: 8px">
+                  <input
+                    type="search"
+                    class="search-input"
+                    id="bridge-us-q"
+                    placeholder="Search user stories…"
+                    autocomplete="off"
+                  />
+                  <button type="button" class="text-action" id="bridge-us-select-all">Select all</button>
+                  <button type="button" class="text-action danger" id="bridge-us-delete" hidden>
+                    Delete selected
+                  </button>
+                  <button type="button" class="text-action danger" id="bridge-us-clear">
+                    Clear all stories
+                  </button>
+                </div>
+                <p class="hint" id="bridge-us-msg"></p>
                 <div class="table-wrap" style="overflow:auto; max-height: 360px">
                   <table id="bridge-us-table">
                     <thead>
                       <tr>
+                        <th style="width:2rem"></th>
                         <th>Name</th>
                         <th>Title</th>
                         <th>Status</th>
@@ -686,6 +722,6 @@
     <script src="team.js?v=13"></script>
     <script src="realtime.js?v=13"></script>
     <script src="org.js?v=13"></script>
-    <script src="bridge.js?v=14"></script>
+    <script src="bridge.js?v=15"></script>
   </body>
 </html>
