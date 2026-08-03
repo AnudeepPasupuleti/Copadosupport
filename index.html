@@ -61,6 +61,10 @@
             <span class="nav-icon" aria-hidden="true">◎</span>
             Org Chart
           </button>
+          <button type="button" class="nav-item" data-nav="bridge" data-view="bridge" id="nav-bridge" hidden>
+            <span class="nav-icon" aria-hidden="true">⇄</span>
+            Salesforce Bridge
+          </button>
           <button type="button" class="nav-item" data-nav="calendar" data-stub="true">
             <span class="nav-icon" aria-hidden="true">▦</span>
             Calendar
@@ -617,15 +621,71 @@
               </p>
             </div>
           </section>
+
+          <section class="bridge-view" id="bridge-view" hidden aria-label="Salesforce Bridge">
+            <div class="dash-card" style="margin-bottom: 16px">
+              <div class="dash-card-head">
+                <h2 class="dash-card-title">Connection</h2>
+                <button type="button" class="text-action" id="bridge-sync-btn">Sync now</button>
+              </div>
+              <p class="hint" id="bridge-status">Checking bridge…</p>
+              <p class="hint" id="bridge-sync-msg"></p>
+            </div>
+
+            <div class="metric-grid" id="bridge-metrics"></div>
+
+            <div class="dash-grid" style="margin-top: 16px">
+              <div class="dash-card">
+                <div class="dash-card-head">
+                  <h2 class="dash-card-title">Cases (synced)</h2>
+                  <span class="hint" id="bridge-cases-count"></span>
+                </div>
+                <div class="table-wrap" style="overflow:auto; max-height: 360px">
+                  <table id="bridge-cases-table">
+                    <thead>
+                      <tr>
+                        <th>Number</th>
+                        <th>Subject</th>
+                        <th>Status</th>
+                        <th>Priority</th>
+                        <th>Owner</th>
+                      </tr>
+                    </thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="dash-card">
+                <div class="dash-card-head">
+                  <h2 class="dash-card-title">User Stories (synced)</h2>
+                  <span class="hint" id="bridge-us-count"></span>
+                </div>
+                <div class="table-wrap" style="overflow:auto; max-height: 360px">
+                  <table id="bridge-us-table">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Title</th>
+                        <th>Status</th>
+                        <th>Priority</th>
+                      </tr>
+                    </thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
     </div>
 
     <div class="confetti" id="confetti" aria-hidden="true"></div>
 
-    <script src="app.js?v=12"></script>
-    <script src="team.js?v=12"></script>
-    <script src="realtime.js?v=12"></script>
-    <script src="org.js?v=12"></script>
+    <script src="app.js?v=13"></script>
+    <script src="team.js?v=13"></script>
+    <script src="realtime.js?v=13"></script>
+    <script src="org.js?v=13"></script>
+    <script src="bridge.js?v=13"></script>
   </body>
 </html>

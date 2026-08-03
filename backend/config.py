@@ -33,6 +33,17 @@ FEATURE_MENTIONS = os.getenv("FEATURE_MENTIONS", "true").lower() in (
 DEFAULT_WORKSPACE_SLUG = os.getenv("DEFAULT_WORKSPACE_SLUG", "default")
 DEFAULT_WORKSPACE_TIMEZONE = os.getenv("DEFAULT_WORKSPACE_TIMEZONE", "Asia/Kolkata")
 
+# Salesforce Data Bridge (extension ingestion API on Render / local)
+SALESFORCE_BRIDGE_URL = os.getenv(
+    "SALESFORCE_BRIDGE_URL", "https://salesforce-data-bridge.onrender.com"
+).rstrip("/")
+SALESFORCE_BRIDGE_EMAIL = os.getenv(
+    "SALESFORCE_BRIDGE_EMAIL", "demo@example.com"
+)
+SALESFORCE_BRIDGE_PASSWORD = os.getenv(
+    "SALESFORCE_BRIDGE_PASSWORD", "demo-password"
+)
+
 
 def normalize_database_url(url: str) -> str:
     """Render/Heroku use postgres://; SQLAlchemy + psycopg need postgresql+psycopg://."""

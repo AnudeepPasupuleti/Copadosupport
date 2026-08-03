@@ -15,6 +15,7 @@ from .admin import router as admin_router
 from .queue import router as queue_router
 from .org import router as org_router
 from .sse import router as sse_router
+from .bridge import router as bridge_router
 from .db import UserState, get_db, init_db, SessionLocal
 from .deps import get_current_user, user_org_context, user_to_dict
 from .seed import empty_state, seed_users
@@ -33,6 +34,7 @@ app.include_router(admin_router)
 app.include_router(queue_router)
 app.include_router(org_router)
 app.include_router(sse_router)
+app.include_router(bridge_router)
 
 
 @app.on_event("startup")
@@ -265,6 +267,11 @@ def team_js():
 @app.get("/org.js")
 def org_js():
     return FileResponse(ROOT / "org.js", media_type="application/javascript")
+
+
+@app.get("/bridge.js")
+def bridge_js():
+    return FileResponse(ROOT / "bridge.js", media_type="application/javascript")
 
 
 @app.get("/realtime.js")

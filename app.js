@@ -264,6 +264,10 @@ function showUser(user) {
   document.getElementById("admin-nav")?.remove();
   const orgNav = document.getElementById("nav-org");
   if (orgNav) orgNav.hidden = !(user.can_view_org ?? true);
+  const bridgeNav = document.getElementById("nav-bridge");
+  if (bridgeNav) {
+    bridgeNav.hidden = !(user.is_admin || user.is_manager);
+  }
   if (user.is_admin && !user.impersonating) {
     if (menuAdminSlot) {
       const adminLink = document.createElement("a");
@@ -953,10 +957,18 @@ function setView(view) {
   if (profileView) profileView.hidden = view !== "profile";
   const orgView = document.getElementById("org-view");
   if (orgView && view !== "org") orgView.hidden = true;
+  const bridgeView = document.getElementById("bridge-view");
+  if (bridgeView && view !== "bridge") bridgeView.hidden = true;
   if (tasksToolbar) tasksToolbar.hidden = view !== "today";
   if (dateLabel) dateLabel.hidden = view === "profile";
 
   if (window.TeamApp) window.TeamApp.hideTeamViews();
+  if (window.BridgeApp && view !== "bridge") window.BridgeApp.hideBridgeView();
+
+  if (view === "bridge" && currentUser && !(currentUser.is_admin || currentUser.is_manager)) {
+    setView("dashboard");
+    return;
+  }
 
   if (view === "org" && currentUser && currentUser.can_view_org === false) {
     setView("dashboard");
@@ -985,6 +997,19 @@ function setView(view) {
     if (dateLabel) {
       dateLabel.hidden = false;
       dateLabel.textContent = "Teams and reporting lines";
+    }
+    document.querySelectorAll(".nav-item").forEach((item) => {
+      item.classList.toggle("is-active", item.dataset.view === view || item.dataset.nav === view);
+    });
+    closeSidebar();
+    return;
+  }
+
+  if (window.BridgeApp && window.BridgeApp.onAppView(view)) {
+    if (pageTitle) pageTitle.textContent = "Salesforce Bridge";
+    if (dateLabel) {
+      dateLabel.hidden = false;
+      dateLabel.textContent = "Synced Case and User Story data from Salesforce";
     }
     document.querySelectorAll(".nav-item").forEach((item) => {
       item.classList.toggle("is-active", item.dataset.view === view || item.dataset.nav === view);

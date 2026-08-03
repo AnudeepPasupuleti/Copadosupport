@@ -313,6 +313,63 @@ class LoginHistory(Base):
     )
 
 
+class SfCase(Base):
+    """Salesforce Case rows synced from the Data Bridge."""
+
+    __tablename__ = "sf_cases"
+    __table_args__ = (
+        Index("ix_sf_cases_status", "status"),
+        Index("ix_sf_cases_case_owner", "case_owner"),
+        Index("ix_sf_cases_synced_at", "synced_at"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    sf_id: Mapped[str] = mapped_column(String(18), unique=True, nullable=False)
+    org_id: Mapped[Optional[str]] = mapped_column(String(18), nullable=True, index=True)
+    case_number: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    subject: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    status: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+    priority: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    case_owner: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    is_closed: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    sf_created_date: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    sf_last_modified: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    export_id: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+    payload: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
+    synced_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        index=True,
+    )
+
+
+class SfUserStory(Base):
+    """Salesforce / Copado User Story rows synced from the Data Bridge."""
+
+    __tablename__ = "sf_user_stories"
+    __table_args__ = (
+        Index("ix_sf_user_stories_status", "status"),
+        Index("ix_sf_user_stories_synced_at", "synced_at"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    sf_id: Mapped[str] = mapped_column(String(18), unique=True, nullable=False)
+    org_id: Mapped[Optional[str]] = mapped_column(String(18), nullable=True, index=True)
+    name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    title: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    status: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+    priority: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    sf_created_date: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    sf_last_modified: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    export_id: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+    payload: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
+    synced_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        index=True,
+    )
+
+
 engine = create_engine(
     config.DATABASE_URL,
     connect_args={"check_same_thread": False} if config.DATABASE_URL.startswith("sqlite") else {},
