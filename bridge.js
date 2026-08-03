@@ -132,6 +132,7 @@
     if (!metricsEl) return;
     const cases = dash.cases || {};
     metricsEl.innerHTML = [
+      metricCard("All cases", cases.total ?? 0),
       metricCard("New", cases.open ?? 0),
       metricCard("In progress", cases.inProgress ?? 0),
       metricCard("On hold", cases.onHold ?? 0),
