@@ -372,6 +372,72 @@ body {
   display: none !important;
 }
 
+.profile-panel-wide {
+  margin-top: 1rem;
+}
+
+.login-history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  max-height: 18rem;
+  overflow: auto;
+}
+
+.login-history-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem 1rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--bg);
+}
+
+.login-history-main {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.88rem;
+}
+
+.login-history-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.login-history-result {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+}
+
+.login-history-result.is-ok {
+  color: var(--success);
+  background: var(--success-soft);
+}
+
+.login-history-result.is-bad {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.login-history-empty {
+  margin: 0;
+  padding: 0.35rem 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
 .user-chip {
   cursor: pointer;
 }

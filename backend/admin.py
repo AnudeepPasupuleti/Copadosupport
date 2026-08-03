@@ -94,6 +94,25 @@ def list_users(db: Session = Depends(get_db), _admin: User = Depends(require_adm
     return [user_to_dict(u) for u in users]
 
 
+@router.get("/login-history")
+def admin_login_history(
+    db: Session = Depends(get_db),
+    _admin: User = Depends(require_admin),
+    user_id: Optional[int] = None,
+    limit: int = 50,
+):
+    from .db import LoginHistory
+    from .login_history import login_history_dict
+
+    limit = max(1, min(limit, 200))
+    q = db.query(LoginHistory).order_by(LoginHistory.created_at.desc(), LoginHistory.id.desc())
+    if user_id is not None:
+        q = q.filter(LoginHistory.user_id == user_id)
+    rows = q.limit(limit).all()
+    users = {u.id: u for u in db.query(User).filter(User.id.in_([r.user_id for r in rows if r.user_id])).all()}
+    return {"items": [login_history_dict(r, users.get(r.user_id)) for r in rows]}
+
+
 @router.get("/status")
 def admin_status(db: Session = Depends(get_db), _admin: User = Depends(require_admin)):
     """Helps confirm Admin is reading the expected database."""

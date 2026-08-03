@@ -591,6 +591,16 @@ body.admin-shell select {
   color: var(--admin-muted);
 }
 
+.cell-ok {
+  color: var(--admin-success);
+  font-weight: 600;
+}
+
+.cell-bad {
+  color: var(--admin-danger);
+  font-weight: 600;
+}
+
 .cell-actions {
   text-align: right;
   white-space: nowrap;

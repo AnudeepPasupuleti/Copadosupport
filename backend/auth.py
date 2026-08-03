@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from . import config
 from .db import User, get_db, get_setting
 from .deps import user_to_dict
+from .login_history import record_login
 from .seed import verify_password
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -59,12 +60,25 @@ def _oauth_client_ready(provider: str) -> bool:
 
 @router.post("/login")
 def login(body: LoginBody, request: Request, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.username == body.username.strip()).first()
+    username = body.username.strip()
+    user = db.query(User).filter(User.username == username).first()
     if not user or not user.password_hash or not verify_password(body.password, user.password_hash):
+        if user:
+            record_login(
+                db,
+                request=request,
+                method="password",
+                user=user,
+                success=False,
+                detail="Invalid password",
+            )
+            db.commit()
         raise HTTPException(status_code=401, detail="Invalid username or password")
 
     request.session.clear()
     request.session["user_id"] = user.id
+    record_login(db, request=request, method="password", user=user, success=True)
+    db.commit()
     return {"ok": True, "user": user_to_dict(user, request)}
 
 
@@ -180,6 +194,8 @@ async def github_callback(request: Request, db: Session = Depends(get_db)):
     db.refresh(user)
     request.session.clear()
     request.session["user_id"] = user.id
+    record_login(db, request=request, method="github", user=user, success=True)
+    db.commit()
     return RedirectResponse(url="/", status_code=302)
 
 
@@ -225,6 +241,8 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
     db.refresh(user)
     request.session.clear()
     request.session["user_id"] = user.id
+    record_login(db, request=request, method="google", user=user, success=True)
+    db.commit()
     return RedirectResponse(url="/", status_code=302)
 
 

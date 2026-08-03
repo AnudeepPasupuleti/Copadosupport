@@ -26,6 +26,7 @@ def client(tmp_path, monkeypatch):
     import backend.db as db
     import backend.deps as deps
     import backend.seed as seed
+    import backend.login_history as login_history
     import backend.auth as auth
     import backend.admin as admin
     import backend.queue as queue
@@ -39,6 +40,7 @@ def client(tmp_path, monkeypatch):
     importlib.reload(db)
     importlib.reload(deps)
     importlib.reload(seed)
+    importlib.reload(login_history)
     importlib.reload(auth)
     importlib.reload(admin)
     importlib.reload(workspaces)
@@ -555,3 +557,22 @@ def test_phase4_versioning_activity_idempotency(client):
     )
     assert commented.status_code == 200
     assert any(c.get("mention_ids") == [peer_id] for c in commented.json()["comments"])
+
+
+def test_login_history(client):
+    bad = client.post("/auth/login", json={"username": "admin", "password": "wrong-pass"})
+    assert bad.status_code == 401
+
+    ok = client.post("/auth/login", json={"username": "admin", "password": "admin"})
+    assert ok.status_code == 200
+
+    mine = client.get("/api/me/login-history")
+    assert mine.status_code == 200
+    items = mine.json()["items"]
+    assert items
+    assert any(i["method"] == "password" and i["success"] is True for i in items)
+    assert any(i["method"] == "password" and i["success"] is False for i in items)
+
+    admin_list = client.get("/api/admin/login-history?limit=20")
+    assert admin_list.status_code == 200
+    assert any(i["user_email"] == "admin@local" for i in admin_list.json()["items"])

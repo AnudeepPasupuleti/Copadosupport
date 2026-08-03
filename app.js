@@ -1084,6 +1084,65 @@ function fillProfileForm(user) {
   document.getElementById("profile-success").hidden = true;
   document.getElementById("profile-password-error").hidden = true;
   document.getElementById("profile-password-success").hidden = true;
+  loadLoginHistory();
+}
+
+async function loadLoginHistory() {
+  const list = document.getElementById("profile-login-history");
+  if (!list) return;
+  list.innerHTML = `<li class="login-history-empty">Loading…</li>`;
+  try {
+    const res = await fetch("/api/me/login-history?limit=25", {
+      credentials: "same-origin",
+      cache: "no-store",
+    });
+    if (res.status === 401) {
+      location.href = "/login";
+      return;
+    }
+    const data = await res.json().catch(() => ({}));
+    const items = data.items || [];
+    if (!items.length) {
+      list.innerHTML = `<li class="login-history-empty">No sign-ins recorded yet.</li>`;
+      return;
+    }
+    list.innerHTML = items
+      .map((row) => {
+        const when = formatLoginWhen(row.created_at);
+        const result = row.success ? "Success" : "Failed";
+        const resultClass = row.success ? "is-ok" : "is-bad";
+        const ip = row.ip || "—";
+        const method = row.method_label || row.method || "—";
+        return `<li class="login-history-item">
+          <div class="login-history-main">
+            <strong>${escapeHtml(method)}</strong>
+            <span class="login-history-result ${resultClass}">${escapeHtml(result)}</span>
+          </div>
+          <div class="login-history-meta">
+            <span>${escapeHtml(when)}</span>
+            <span>${escapeHtml(ip)}</span>
+          </div>
+        </li>`;
+      })
+      .join("");
+  } catch {
+    list.innerHTML = `<li class="login-history-empty">Could not load login history.</li>`;
+  }
+}
+
+function formatLoginWhen(iso) {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  } catch {
+    return iso;
+  }
 }
 
 function setProfileAvatar(url, label) {

@@ -63,6 +63,26 @@ def me(request: Request, user=Depends(get_current_user), db: Session = Depends(g
     return data
 
 
+@app.get("/api/me/login-history")
+def my_login_history(
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+    limit: int = 30,
+):
+    from .db import LoginHistory
+    from .login_history import login_history_dict
+
+    limit = max(1, min(limit, 100))
+    rows = (
+        db.query(LoginHistory)
+        .filter(LoginHistory.user_id == user.id)
+        .order_by(LoginHistory.created_at.desc(), LoginHistory.id.desc())
+        .limit(limit)
+        .all()
+    )
+    return {"items": [login_history_dict(r, user) for r in rows]}
+
+
 class ProfileUpdate(BaseModel):
     name: Optional[str] = None
     picture: Optional[str] = None
