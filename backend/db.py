@@ -339,7 +339,6 @@ class SfCase(Base):
     synced_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
-        index=True,
     )
 
 
@@ -366,7 +365,6 @@ class SfUserStory(Base):
     synced_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
-        index=True,
     )
 
 
@@ -379,7 +377,14 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 
 def init_db() -> None:
-    Base.metadata.create_all(bind=engine)
+    # checkfirst avoids recreating existing tables/indexes; still guard for
+    # partial deploys where an index already exists from a failed startup.
+    try:
+        Base.metadata.create_all(bind=engine, checkfirst=True)
+    except Exception as exc:
+        msg = str(exc).lower()
+        if "already exists" not in msg:
+            raise
     _migrate_schema()
     _ensure_default_workspace()
 
