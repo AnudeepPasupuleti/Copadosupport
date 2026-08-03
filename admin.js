@@ -91,52 +91,6 @@ async function loadSettings() {
   setConfiguredBadge(githubBadge, s.github_configured);
 }
 
-async function loadLoginHistory() {
-  const body = document.getElementById("login-history-body");
-  const empty = document.getElementById("login-history-empty");
-  const table = document.getElementById("login-history-table");
-  if (!body) return;
-  try {
-    const data = await api("/api/admin/login-history?limit=40");
-    const items = data.items || [];
-    body.innerHTML = "";
-    if (empty) empty.hidden = items.length > 0;
-    if (table) table.hidden = items.length === 0;
-    if (!items.length) {
-      if (empty) empty.textContent = "No login events yet.";
-      return;
-    }
-    items.forEach((row) => {
-      const tr = document.createElement("tr");
-      const when = row.created_at ? new Date(row.created_at).toLocaleString() : "—";
-      const cells = [
-        when,
-        row.user_name || row.user_email || (row.user_id ? `#${row.user_id}` : "Unknown"),
-        row.method_label || row.method || "—",
-        row.success ? "Success" : "Failed",
-        row.ip || "—",
-      ];
-      cells.forEach((text, idx) => {
-        const td = document.createElement("td");
-        if (idx > 0) td.className = "cell-muted";
-        if (idx === 3) {
-          td.className = row.success ? "cell-ok" : "cell-bad";
-        }
-        td.textContent = text;
-        tr.appendChild(td);
-      });
-      body.appendChild(tr);
-    });
-  } catch (err) {
-    body.innerHTML = "";
-    if (empty) {
-      empty.hidden = false;
-      empty.textContent = err.message || "Could not load login history.";
-    }
-    if (table) table.hidden = true;
-  }
-}
-
 async function loadUsers() {
   const statusEl = document.getElementById("users-db-status");
   let status = null;
@@ -169,8 +123,6 @@ async function loadUsers() {
     navUserCount.textContent = String(users.length);
     navUserCount.hidden = false;
   }
-
-  await loadLoginHistory();
 
   const iAmSuper = !!(currentAdmin && currentAdmin.is_super_admin);
   const myId = currentAdmin && currentAdmin.id;

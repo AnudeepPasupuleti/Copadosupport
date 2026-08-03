@@ -1025,6 +1025,7 @@ function setView(view) {
       dateLabel.textContent = "Manage your account details and password";
     }
     fillProfileForm(currentUser);
+    loadLoginHistory();
     return;
   }
   if (dateLabel) dateLabel.hidden = false;
@@ -1084,26 +1085,33 @@ function fillProfileForm(user) {
   document.getElementById("profile-success").hidden = true;
   document.getElementById("profile-password-error").hidden = true;
   document.getElementById("profile-password-success").hidden = true;
-  loadLoginHistory();
 }
 
 async function loadLoginHistory() {
   const list = document.getElementById("profile-login-history");
   if (!list) return;
-  list.innerHTML = `<li class="login-history-empty">Loading…</li>`;
+  list.innerHTML = `<p class="login-history-empty">Loading…</p>`;
   try {
     const res = await fetch("/api/me/login-history?limit=25", {
       credentials: "same-origin",
       cache: "no-store",
+      headers: { Accept: "application/json" },
     });
     if (res.status === 401) {
       location.href = "/login";
       return;
     }
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      const detail = data.detail;
+      throw new Error(
+        typeof detail === "string" ? detail : `Could not load login history (${res.status})`
+      );
+    }
     const data = await res.json().catch(() => ({}));
-    const items = data.items || [];
+    const items = Array.isArray(data.items) ? data.items : [];
     if (!items.length) {
-      list.innerHTML = `<li class="login-history-empty">No sign-ins recorded yet.</li>`;
+      list.innerHTML = `<p class="login-history-empty">No sign-ins recorded yet. Sign out and sign back in to see history here.</p>`;
       return;
     }
     list.innerHTML = items
@@ -1113,7 +1121,7 @@ async function loadLoginHistory() {
         const resultClass = row.success ? "is-ok" : "is-bad";
         const ip = row.ip || "—";
         const method = row.method_label || row.method || "—";
-        return `<li class="login-history-item">
+        return `<div class="login-history-item" role="listitem">
           <div class="login-history-main">
             <strong>${escapeHtml(method)}</strong>
             <span class="login-history-result ${resultClass}">${escapeHtml(result)}</span>
@@ -1122,11 +1130,13 @@ async function loadLoginHistory() {
             <span>${escapeHtml(when)}</span>
             <span>${escapeHtml(ip)}</span>
           </div>
-        </li>`;
+        </div>`;
       })
       .join("");
-  } catch {
-    list.innerHTML = `<li class="login-history-empty">Could not load login history.</li>`;
+  } catch (err) {
+    list.innerHTML = `<p class="login-history-empty">${escapeHtml(
+      err.message || "Could not load login history."
+    )}</p>`;
   }
 }
 
@@ -1182,6 +1192,7 @@ async function onSaveProfile(e) {
     currentUser = data;
     showUser(currentUser);
     fillProfileForm(currentUser);
+    loadLoginHistory();
     ok.hidden = false;
   } catch (ex) {
     err.textContent = ex.message || "Could not save profile";
