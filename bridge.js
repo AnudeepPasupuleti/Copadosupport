@@ -1,10 +1,12 @@
 /**
  * Salesforce Bridge — sync Case / User Story data from the Data Bridge API
- * into the website DB and show a simple dashboard with search/delete.
+ * into the website DB and show an ops workspace with search/delete.
  */
 (function () {
   const bridgeView = document.getElementById("bridge-view");
   const statusEl = document.getElementById("bridge-status");
+  const statusPill = document.getElementById("bridge-status-pill");
+  const statusUrl = document.getElementById("bridge-status-url");
   const syncMsg = document.getElementById("bridge-sync-msg");
   const metricsEl = document.getElementById("bridge-metrics");
   const casesBody = document.querySelector("#bridge-cases-table tbody");
@@ -21,6 +23,7 @@
 
   let casesSearchTimer = null;
   let usSearchTimer = null;
+  let activeTab = "cases";
 
   function escapeHtml(str) {
     return String(str ?? "")
@@ -58,11 +61,69 @@
     if (bridgeView) bridgeView.hidden = true;
   }
 
+  function setActiveTab(tab) {
+    activeTab = tab === "stories" ? "stories" : "cases";
+    document.querySelectorAll("[data-bridge-tab]").forEach((btn) => {
+      const isActive = btn.getAttribute("data-bridge-tab") === activeTab;
+      btn.classList.toggle("is-active", isActive);
+      btn.setAttribute("aria-selected", isActive ? "true" : "false");
+    });
+    document.querySelectorAll("[data-bridge-panel]").forEach((panel) => {
+      const show = panel.getAttribute("data-bridge-panel") === activeTab;
+      panel.hidden = !show;
+    });
+  }
+
+  function setConnectionStatus(state, urlText, liveText) {
+    if (statusPill) {
+      statusPill.dataset.state = state;
+      statusPill.textContent =
+        state === "connected"
+          ? "Connected"
+          : state === "unreachable"
+            ? "Unreachable"
+            : "Checking";
+    }
+    if (statusUrl) {
+      statusUrl.textContent = urlText || "";
+    }
+    if (statusEl) {
+      statusEl.textContent = liveText || "";
+    }
+  }
+
+  function setSyncMessage(text, kind) {
+    if (!syncMsg) return;
+    if (!text) {
+      syncMsg.hidden = true;
+      syncMsg.textContent = "";
+      syncMsg.classList.remove("is-ok", "is-error");
+      return;
+    }
+    syncMsg.hidden = false;
+    syncMsg.textContent = text;
+    syncMsg.classList.toggle("is-ok", kind === "ok");
+    syncMsg.classList.toggle("is-error", kind === "error");
+  }
+
+  function setPanelMessage(el, text, isError) {
+    if (!el) return;
+    if (!text) {
+      el.hidden = true;
+      el.textContent = "";
+      el.classList.remove("is-error");
+      return;
+    }
+    el.hidden = false;
+    el.textContent = text;
+    el.classList.toggle("is-error", !!isError);
+  }
+
   function metricCard(label, value) {
     return (
-      `<div class="dash-card" style="padding:12px">` +
-      `<p class="hint" style="margin:0">${escapeHtml(label)}</p>` +
-      `<strong style="font-size:1.4rem">${escapeHtml(String(value))}</strong>` +
+      `<div class="metric-card">` +
+      `<p class="metric-label">${escapeHtml(label)}</p>` +
+      `<p class="metric-value">${escapeHtml(String(value))}</p>` +
       `</div>`
     );
   }
@@ -71,7 +132,7 @@
     if (!metricsEl) return;
     const cases = dash.cases || {};
     const stories = dash.userStories || {};
-    const parts = [
+    metricsEl.innerHTML = [
       metricCard("Cases synced", cases.total ?? 0),
       metricCard("Open cases", cases.open ?? 0),
       metricCard("User stories", stories.total ?? 0),
@@ -81,13 +142,64 @@
           ? new Date(dash.lastSyncedAt).toLocaleString()
           : "Never"
       ),
-    ];
-    const byStatus = cases.byStatus || {};
-    const topStatuses = Object.entries(byStatus).slice(0, 4);
-    for (const [k, v] of topStatuses) {
-      parts.push(metricCard(`Cases · ${k}`, v));
+    ].join("");
+  }
+
+  function badgeClassForStatus(status) {
+    const raw = String(status || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "_");
+    if (!raw) return "badge";
+    const map = {
+      new: "status-new",
+      open: "status-new",
+      investigating: "status-investigating",
+      in_progress: "status-investigating",
+      "in-progress": "status-investigating",
+      waiting_customer: "status-waiting_customer",
+      waiting_engineering: "status-waiting_engineering",
+      resolved: "status-resolved",
+      closed: "status-closed",
+      done: "status-resolved",
+      completed: "status-resolved",
+    };
+    return `badge ${map[raw] || ""}`.trim();
+  }
+
+  function badgeClassForPriority(priority) {
+    const raw = String(priority || "")
+      .trim()
+      .toLowerCase();
+    if (!raw) return "badge";
+    if (raw.includes("high") || raw === "p1" || raw === "1") {
+      return "badge prio-high";
     }
-    metricsEl.innerHTML = parts.join("");
+    if (raw.includes("low") || raw === "p3" || raw === "3") {
+      return "badge prio-low";
+    }
+    return "badge prio-medium";
+  }
+
+  function badgeCell(value, kind) {
+    const label = value || "—";
+    if (!value) return `<td>${escapeHtml(label)}</td>`;
+    const cls =
+      kind === "priority"
+        ? badgeClassForPriority(value)
+        : badgeClassForStatus(value);
+    return `<td><span class="${cls}">${escapeHtml(label)}</span></td>`;
+  }
+
+  function emptyStateRow(colspan, title, copy) {
+    return (
+      `<tr><td colspan="${colspan}">` +
+      `<div class="bridge-empty">` +
+      `<p class="bridge-empty-title">${escapeHtml(title)}</p>` +
+      `<p class="bridge-empty-copy">${escapeHtml(copy)}</p>` +
+      `</div>` +
+      `</td></tr>`
+    );
   }
 
   function selectedIds(tbody) {
@@ -119,10 +231,13 @@
   function renderCases(cases) {
     if (!casesBody) return;
     casesBody.innerHTML = "";
-    if (casesCount) casesCount.textContent = `${cases.length} row(s)`;
+    if (casesCount) casesCount.textContent = String(cases.length);
     if (!cases.length) {
-      casesBody.innerHTML =
-        '<tr><td colspan="6" class="hint">No cases synced yet. Export from the extension, then Sync now.</td></tr>';
+      casesBody.innerHTML = emptyStateRow(
+        6,
+        "No cases synced yet",
+        "Export from the Data Bridge extension, then use Sync now."
+      );
       updateDeleteButtons();
       return;
     }
@@ -132,8 +247,8 @@
         `<td><input type="checkbox" data-id="${escapeHtml(String(c.id))}" aria-label="Select case ${escapeHtml(c.caseNumber || c.sfId || "")}" /></td>` +
         `<td>${escapeHtml(c.caseNumber || "—")}</td>` +
         `<td>${escapeHtml(c.subject || "—")}</td>` +
-        `<td>${escapeHtml(c.status || "—")}</td>` +
-        `<td>${escapeHtml(c.priority || "—")}</td>` +
+        badgeCell(c.status, "status") +
+        badgeCell(c.priority, "priority") +
         `<td>${escapeHtml(c.caseOwner || "—")}</td>`;
       casesBody.appendChild(tr);
     }
@@ -143,10 +258,13 @@
   function renderUserStories(stories) {
     if (!usBody) return;
     usBody.innerHTML = "";
-    if (usCount) usCount.textContent = `${stories.length} row(s)`;
+    if (usCount) usCount.textContent = String(stories.length);
     if (!stories.length) {
-      usBody.innerHTML =
-        '<tr><td colspan="5" class="hint">No user stories synced yet.</td></tr>';
+      usBody.innerHTML = emptyStateRow(
+        5,
+        "No user stories synced yet",
+        "Export from the Data Bridge extension, then use Sync now."
+      );
       updateDeleteButtons();
       return;
     }
@@ -156,8 +274,8 @@
         `<td><input type="checkbox" data-id="${escapeHtml(String(s.id))}" aria-label="Select story ${escapeHtml(s.name || s.sfId || "")}" /></td>` +
         `<td>${escapeHtml(s.name || "—")}</td>` +
         `<td>${escapeHtml(s.title || "—")}</td>` +
-        `<td>${escapeHtml(s.status || "—")}</td>` +
-        `<td>${escapeHtml(s.priority || "—")}</td>`;
+        badgeCell(s.status, "status") +
+        badgeCell(s.priority, "priority");
       usBody.appendChild(tr);
     }
     updateDeleteButtons();
@@ -180,96 +298,109 @@
   }
 
   async function refresh() {
-    if (statusEl) statusEl.textContent = "Loading…";
+    setConnectionStatus("checking", "", "Loading…");
     try {
       const [status, dash] = await Promise.all([
         api("/api/bridge/status"),
         api("/api/bridge/dashboard"),
       ]);
-      if (statusEl) {
-        statusEl.textContent = status.reachable
-          ? `Connected to ${status.url || "bridge"}`
-          : `Bridge unreachable: ${status.message || "unknown"}`;
-        statusEl.className = status.reachable ? "hint ok" : "hint login-error";
+      if (status.reachable) {
+        setConnectionStatus(
+          "connected",
+          status.url || "",
+          `Connected to ${status.url || "bridge"}`
+        );
+      } else {
+        setConnectionStatus(
+          "unreachable",
+          status.url || "",
+          `Bridge unreachable: ${status.message || "unknown"}`
+        );
       }
       renderMetrics(dash);
       await Promise.all([loadCases(), loadUserStories()]);
     } catch (err) {
-      if (statusEl) {
-        statusEl.textContent = err instanceof Error ? err.message : "Failed to load";
-        statusEl.className = "hint login-error";
-      }
+      const msg = err instanceof Error ? err.message : "Failed to load";
+      setConnectionStatus("unreachable", "", msg);
     }
   }
 
   async function syncNow() {
-    if (syncMsg) syncMsg.textContent = "Syncing from Data Bridge…";
+    setSyncMessage("Syncing from Data Bridge…");
     if (syncBtn) syncBtn.disabled = true;
     try {
       const result = await api("/api/bridge/sync", { method: "POST" });
-      if (syncMsg) {
-        const parts = [
-          `Synced: ${result.casesUpserted || 0} case row(s), ` +
-            `${result.userStoriesUpserted || 0} user story row(s)`,
-          `jobs ${result.jobsProcessed || 0}/${result.jobsFound || 0}`,
-          `records ${result.recordsSeen || 0}`,
-        ];
-        if (result.recordsSkipped) {
-          parts.push(`${result.recordsSkipped} skipped (no Id/CaseNumber)`);
-        }
-        if (result.errors?.length) {
-          parts.push(`${result.errors.length} error(s)`);
-        }
-        syncMsg.textContent = parts.join(" · ");
+      const parts = [
+        `Synced: ${result.casesUpserted || 0} case row(s), ` +
+          `${result.userStoriesUpserted || 0} user story row(s)`,
+        `jobs ${result.jobsProcessed || 0}/${result.jobsFound || 0}`,
+        `records ${result.recordsSeen || 0}`,
+      ];
+      if (result.recordsSkipped) {
+        parts.push(`${result.recordsSkipped} skipped (no Id/CaseNumber)`);
       }
+      if (result.errors?.length) {
+        parts.push(`${result.errors.length} error(s)`);
+      }
+      setSyncMessage(
+        parts.join(" · "),
+        result.errors?.length ? "error" : "ok"
+      );
       await refresh();
     } catch (err) {
-      if (syncMsg) {
-        syncMsg.textContent =
-          err instanceof Error ? err.message : "Sync failed";
-      }
+      setSyncMessage(
+        err instanceof Error ? err.message : "Sync failed",
+        "error"
+      );
     } finally {
       if (syncBtn) syncBtn.disabled = false;
     }
   }
 
   async function deleteCases(opts) {
-    if (casesMsg) casesMsg.textContent = "Deleting…";
+    setPanelMessage(casesMsg, "Deleting…");
     try {
       const result = await api("/api/bridge/cases/delete", {
         method: "POST",
         body: JSON.stringify(opts),
       });
-      if (casesMsg) {
-        casesMsg.textContent = `Deleted ${result.deleted || 0} case row(s).`;
-      }
+      setPanelMessage(casesMsg, `Deleted ${result.deleted || 0} case row(s).`);
       await refresh();
     } catch (err) {
-      if (casesMsg) {
-        casesMsg.textContent =
-          err instanceof Error ? err.message : "Delete failed";
-      }
+      setPanelMessage(
+        casesMsg,
+        err instanceof Error ? err.message : "Delete failed",
+        true
+      );
     }
   }
 
   async function deleteUserStories(opts) {
-    if (usMsg) usMsg.textContent = "Deleting…";
+    setPanelMessage(usMsg, "Deleting…");
     try {
       const result = await api("/api/bridge/user-stories/delete", {
         method: "POST",
         body: JSON.stringify(opts),
       });
-      if (usMsg) {
-        usMsg.textContent = `Deleted ${result.deleted || 0} user story row(s).`;
-      }
+      setPanelMessage(
+        usMsg,
+        `Deleted ${result.deleted || 0} user story row(s).`
+      );
       await refresh();
     } catch (err) {
-      if (usMsg) {
-        usMsg.textContent =
-          err instanceof Error ? err.message : "Delete failed";
-      }
+      setPanelMessage(
+        usMsg,
+        err instanceof Error ? err.message : "Delete failed",
+        true
+      );
     }
   }
+
+  document.querySelectorAll("[data-bridge-tab]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      setActiveTab(btn.getAttribute("data-bridge-tab"));
+    });
+  });
 
   syncBtn?.addEventListener("click", () => {
     void syncNow();
@@ -354,10 +485,11 @@
     clearTimeout(casesSearchTimer);
     casesSearchTimer = setTimeout(() => {
       void loadCases().catch((err) => {
-        if (casesMsg) {
-          casesMsg.textContent =
-            err instanceof Error ? err.message : "Search failed";
-        }
+        setPanelMessage(
+          casesMsg,
+          err instanceof Error ? err.message : "Search failed",
+          true
+        );
       });
     }, 250);
   });
@@ -366,10 +498,11 @@
     clearTimeout(usSearchTimer);
     usSearchTimer = setTimeout(() => {
       void loadUserStories().catch((err) => {
-        if (usMsg) {
-          usMsg.textContent =
-            err instanceof Error ? err.message : "Search failed";
-        }
+        setPanelMessage(
+          usMsg,
+          err instanceof Error ? err.message : "Search failed",
+          true
+        );
       });
     }, 250);
   });
@@ -381,6 +514,7 @@
     }
     if (!bridgeView) return false;
     bridgeView.hidden = false;
+    setActiveTab(activeTab);
     void refresh();
     return true;
   }

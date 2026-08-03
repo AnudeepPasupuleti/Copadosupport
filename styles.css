@@ -3174,3 +3174,313 @@ html[data-theme="dark"] .login-body {
     flex-direction: column;
   }
 }
+
+/* —— Salesforce Bridge —— */
+.bridge-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.bridge-strip {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding: 1.25rem 1.35rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.bridge-strip-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.bridge-kicker {
+  margin: 0 0 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.bridge-title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.bridge-subtitle {
+  margin: 0.35rem 0 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  max-width: 36rem;
+  line-height: 1.45;
+}
+
+.bridge-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-top: 0.85rem;
+}
+
+.bridge-status-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--text-muted);
+}
+
+.bridge-status-pill[data-state="connected"] {
+  color: var(--success);
+  background: var(--success-soft);
+}
+
+.bridge-status-pill[data-state="unreachable"] {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.bridge-status-pill[data-state="checking"] {
+  color: var(--text-muted);
+  background: var(--surface-muted);
+}
+
+.bridge-status-url {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.bridge-sync-msg {
+  margin: 0.65rem 0 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.bridge-sync-msg.is-error {
+  color: var(--danger);
+}
+
+.bridge-sync-msg.is-ok {
+  color: var(--success);
+}
+
+.bridge-strip-actions {
+  flex-shrink: 0;
+  padding-top: 0.15rem;
+}
+
+.bridge-metrics {
+  margin-bottom: 0;
+}
+
+.bridge-workspace {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.bridge-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  padding: 0 0.5rem;
+  background: var(--surface-muted);
+}
+
+.bridge-tab {
+  appearance: none;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.bridge-tab:hover {
+  color: var(--text);
+}
+
+.bridge-tab.is-active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.bridge-panel {
+  padding: 1.1rem 1.25rem 1.25rem;
+}
+
+.bridge-panel[hidden] {
+  display: none;
+}
+
+.bridge-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+}
+
+.bridge-panel-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.bridge-count-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.bridge-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.bridge-search {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.bridge-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.85rem;
+  margin-left: auto;
+}
+
+.bridge-panel-msg {
+  margin: 0 0 0.65rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.bridge-panel-msg.is-error {
+  color: var(--danger);
+}
+
+.bridge-table-wrap {
+  overflow: auto;
+  max-height: min(55vh, 480px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+}
+
+.bridge-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.bridge-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  text-align: left;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  background: var(--surface-muted);
+  border-bottom: 1px solid var(--border);
+  padding: 0.65rem 0.75rem;
+  white-space: nowrap;
+}
+
+.bridge-table tbody td {
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  color: var(--text);
+}
+
+.bridge-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.bridge-table tbody tr:hover td {
+  background: var(--surface-muted);
+}
+
+.bridge-col-check {
+  width: 2rem;
+}
+
+.bridge-empty {
+  padding: 2rem 1.25rem;
+  text-align: center;
+}
+
+.bridge-empty-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.bridge-empty-copy {
+  margin: 0.4rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+@media (max-width: 720px) {
+  .bridge-strip {
+    flex-direction: column;
+  }
+
+  .bridge-strip-actions {
+    width: 100%;
+  }
+
+  .bridge-strip-actions .btn {
+    width: 100%;
+  }
+
+  .bridge-toolbar-actions {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

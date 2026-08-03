@@ -17,7 +17,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=12" />
+    <link rel="stylesheet" href="styles.css?v=13" />
   </head>
   <body class="shell-body">
     <div id="impersonation-banner" class="impersonation-banner" hidden>
@@ -623,94 +623,150 @@
           </section>
 
           <section class="bridge-view" id="bridge-view" hidden aria-label="Salesforce Bridge">
-            <div class="dash-card" style="margin-bottom: 16px">
-              <div class="dash-card-head">
-                <h2 class="dash-card-title">Connection</h2>
-                <button type="button" class="text-action" id="bridge-sync-btn">Sync now</button>
-              </div>
-              <p class="hint" id="bridge-status">Checking bridge…</p>
-              <p class="hint" id="bridge-sync-msg"></p>
-            </div>
+            <div class="bridge-page">
+              <header class="bridge-strip">
+                <div class="bridge-strip-copy">
+                  <p class="bridge-kicker">Data sync</p>
+                  <h2 class="bridge-title">Salesforce Bridge</h2>
+                  <p class="bridge-subtitle">
+                    Pull Cases and User Stories from the Data Bridge into this workspace.
+                  </p>
+                  <div class="bridge-status-row">
+                    <span class="bridge-status-pill" id="bridge-status-pill" data-state="checking">Checking</span>
+                    <span class="bridge-status-url" id="bridge-status-url"></span>
+                  </div>
+                  <p class="bridge-sync-msg" id="bridge-sync-msg" hidden></p>
+                </div>
+                <div class="bridge-strip-actions">
+                  <button type="button" class="btn btn-primary" id="bridge-sync-btn">Sync now</button>
+                </div>
+              </header>
 
-            <div class="metric-grid" id="bridge-metrics"></div>
+              <div class="metric-grid bridge-metrics" id="bridge-metrics"></div>
 
-            <div class="dash-grid" style="margin-top: 16px">
-              <div class="dash-card">
-                <div class="dash-card-head">
-                  <h2 class="dash-card-title">Cases (synced)</h2>
-                  <span class="hint" id="bridge-cases-count"></span>
-                </div>
-                <div class="queue-toolbar" style="margin-bottom: 10px; flex-wrap: wrap; gap: 8px">
-                  <input
-                    type="search"
-                    class="search-input"
-                    id="bridge-cases-q"
-                    placeholder="Search cases…"
-                    autocomplete="off"
-                  />
-                  <button type="button" class="text-action" id="bridge-cases-select-all">Select all</button>
-                  <button type="button" class="text-action danger" id="bridge-cases-delete" hidden>
-                    Delete selected
+              <div class="bridge-workspace">
+                <div class="bridge-tabs" role="tablist" aria-label="Synced datasets">
+                  <button
+                    type="button"
+                    class="bridge-tab is-active"
+                    role="tab"
+                    id="bridge-tab-cases"
+                    data-bridge-tab="cases"
+                    aria-selected="true"
+                    aria-controls="bridge-panel-cases"
+                  >
+                    Cases
                   </button>
-                  <button type="button" class="text-action danger" id="bridge-cases-clear">
-                    Clear all cases
-                  </button>
-                </div>
-                <p class="hint" id="bridge-cases-msg"></p>
-                <div class="table-wrap" style="overflow:auto; max-height: 360px">
-                  <table id="bridge-cases-table">
-                    <thead>
-                      <tr>
-                        <th style="width:2rem"></th>
-                        <th>Number</th>
-                        <th>Subject</th>
-                        <th>Status</th>
-                        <th>Priority</th>
-                        <th>Owner</th>
-                      </tr>
-                    </thead>
-                    <tbody></tbody>
-                  </table>
-                </div>
-              </div>
-              <div class="dash-card">
-                <div class="dash-card-head">
-                  <h2 class="dash-card-title">User Stories (synced)</h2>
-                  <span class="hint" id="bridge-us-count"></span>
-                </div>
-                <div class="queue-toolbar" style="margin-bottom: 10px; flex-wrap: wrap; gap: 8px">
-                  <input
-                    type="search"
-                    class="search-input"
-                    id="bridge-us-q"
-                    placeholder="Search user stories…"
-                    autocomplete="off"
-                  />
-                  <button type="button" class="text-action" id="bridge-us-select-all">Select all</button>
-                  <button type="button" class="text-action danger" id="bridge-us-delete" hidden>
-                    Delete selected
-                  </button>
-                  <button type="button" class="text-action danger" id="bridge-us-clear">
-                    Clear all stories
+                  <button
+                    type="button"
+                    class="bridge-tab"
+                    role="tab"
+                    id="bridge-tab-stories"
+                    data-bridge-tab="stories"
+                    aria-selected="false"
+                    aria-controls="bridge-panel-stories"
+                  >
+                    User Stories
                   </button>
                 </div>
-                <p class="hint" id="bridge-us-msg"></p>
-                <div class="table-wrap" style="overflow:auto; max-height: 360px">
-                  <table id="bridge-us-table">
-                    <thead>
-                      <tr>
-                        <th style="width:2rem"></th>
-                        <th>Name</th>
-                        <th>Title</th>
-                        <th>Status</th>
-                        <th>Priority</th>
-                      </tr>
-                    </thead>
-                    <tbody></tbody>
-                  </table>
-                </div>
+
+                <section
+                  class="bridge-panel"
+                  id="bridge-panel-cases"
+                  role="tabpanel"
+                  aria-labelledby="bridge-tab-cases"
+                  data-bridge-panel="cases"
+                >
+                  <div class="bridge-panel-head">
+                    <h3 class="bridge-panel-title">Cases</h3>
+                    <span class="bridge-count-chip" id="bridge-cases-count">0</span>
+                  </div>
+                  <div class="bridge-toolbar">
+                    <input
+                      type="search"
+                      class="search-input bridge-search"
+                      id="bridge-cases-q"
+                      placeholder="Search cases…"
+                      autocomplete="off"
+                    />
+                    <div class="bridge-toolbar-actions">
+                      <button type="button" class="text-action" id="bridge-cases-select-all">Select all</button>
+                      <button type="button" class="text-action danger" id="bridge-cases-delete" hidden>
+                        Delete selected
+                      </button>
+                      <button type="button" class="btn btn-danger-outline" id="bridge-cases-clear">
+                        Clear all
+                      </button>
+                    </div>
+                  </div>
+                  <p class="bridge-panel-msg" id="bridge-cases-msg" hidden></p>
+                  <div class="bridge-table-wrap">
+                    <table class="bridge-table" id="bridge-cases-table">
+                      <thead>
+                        <tr>
+                          <th class="bridge-col-check"></th>
+                          <th>Number</th>
+                          <th>Subject</th>
+                          <th>Status</th>
+                          <th>Priority</th>
+                          <th>Owner</th>
+                        </tr>
+                      </thead>
+                      <tbody></tbody>
+                    </table>
+                  </div>
+                </section>
+
+                <section
+                  class="bridge-panel"
+                  id="bridge-panel-stories"
+                  role="tabpanel"
+                  aria-labelledby="bridge-tab-stories"
+                  data-bridge-panel="stories"
+                  hidden
+                >
+                  <div class="bridge-panel-head">
+                    <h3 class="bridge-panel-title">User Stories</h3>
+                    <span class="bridge-count-chip" id="bridge-us-count">0</span>
+                  </div>
+                  <div class="bridge-toolbar">
+                    <input
+                      type="search"
+                      class="search-input bridge-search"
+                      id="bridge-us-q"
+                      placeholder="Search user stories…"
+                      autocomplete="off"
+                    />
+                    <div class="bridge-toolbar-actions">
+                      <button type="button" class="text-action" id="bridge-us-select-all">Select all</button>
+                      <button type="button" class="text-action danger" id="bridge-us-delete" hidden>
+                        Delete selected
+                      </button>
+                      <button type="button" class="btn btn-danger-outline" id="bridge-us-clear">
+                        Clear all
+                      </button>
+                    </div>
+                  </div>
+                  <p class="bridge-panel-msg" id="bridge-us-msg" hidden></p>
+                  <div class="bridge-table-wrap">
+                    <table class="bridge-table" id="bridge-us-table">
+                      <thead>
+                        <tr>
+                          <th class="bridge-col-check"></th>
+                          <th>Name</th>
+                          <th>Title</th>
+                          <th>Status</th>
+                          <th>Priority</th>
+                        </tr>
+                      </thead>
+                      <tbody></tbody>
+                    </table>
+                  </div>
+                </section>
               </div>
             </div>
+            <!-- kept for JS status text fallback / a11y live region -->
+            <p class="visually-hidden" id="bridge-status" aria-live="polite">Checking bridge…</p>
           </section>
         </div>
       </div>
@@ -722,6 +778,6 @@
     <script src="team.js?v=13"></script>
     <script src="realtime.js?v=13"></script>
     <script src="org.js?v=13"></script>
-    <script src="bridge.js?v=15"></script>
+    <script src="bridge.js?v=16"></script>
   </body>
 </html>
