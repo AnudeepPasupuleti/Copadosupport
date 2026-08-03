@@ -1121,14 +1121,23 @@ async function loadLoginHistory() {
         const resultClass = row.success ? "is-ok" : "is-bad";
         const ip = row.ip || "—";
         const method = row.method_label || row.method || "—";
+        const device = row.device || "Unknown device";
+        const detail = row.detail || "";
+        const actor =
+          row.actor_name || row.actor_email
+            ? `By ${row.actor_name || row.actor_email}`
+            : "";
         return `<div class="login-history-item" role="listitem">
           <div class="login-history-main">
             <strong>${escapeHtml(method)}</strong>
             <span class="login-history-result ${resultClass}">${escapeHtml(result)}</span>
           </div>
+          ${detail ? `<p class="login-history-detail">${escapeHtml(detail)}</p>` : ""}
           <div class="login-history-meta">
             <span>${escapeHtml(when)}</span>
-            <span>${escapeHtml(ip)}</span>
+            <span>${escapeHtml(device)}</span>
+            <span>IP ${escapeHtml(ip)}</span>
+            ${actor ? `<span>${escapeHtml(actor)}</span>` : ""}
           </div>
         </div>`;
       })

@@ -69,7 +69,7 @@ def my_login_history(
     db: Session = Depends(get_db),
     limit: int = 30,
 ):
-    from .db import LoginHistory
+    from .db import LoginHistory, User
     from .login_history import login_history_dict
 
     limit = max(1, min(limit, 100))
@@ -80,7 +80,13 @@ def my_login_history(
         .limit(limit)
         .all()
     )
-    return {"items": [login_history_dict(r, user) for r in rows]}
+    actor_ids = {r.actor_id for r in rows if r.actor_id}
+    actors = {
+        u.id: u for u in db.query(User).filter(User.id.in_(actor_ids)).all()
+    } if actor_ids else {}
+    return {
+        "items": [login_history_dict(r, user, actors.get(r.actor_id)) for r in rows]
+    }
 
 
 class ProfileUpdate(BaseModel):

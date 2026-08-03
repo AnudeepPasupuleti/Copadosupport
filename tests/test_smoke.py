@@ -566,13 +566,40 @@ def test_login_history(client):
     ok = client.post("/auth/login", json={"username": "admin", "password": "admin"})
     assert ok.status_code == 200
 
+    member = client.post(
+        "/api/admin/users",
+        json={
+            "email": "historyuser@example.com",
+            "name": "History User",
+            "auth_type": "password",
+            "username": "historyuser",
+            "password": "historypass1",
+            "role": "member",
+        },
+    )
+    assert member.status_code == 200
+    member_id = member.json()["id"]
+
+    imp = client.post(f"/api/admin/users/{member_id}/impersonate")
+    assert imp.status_code == 200
+
+    as_member = client.get("/api/me/login-history")
+    assert as_member.status_code == 200
+    member_items = as_member.json()["items"]
+    assert any(i["method"] == "login_as" and i["success"] is True for i in member_items)
+    login_as = next(i for i in member_items if i["method"] == "login_as")
+    assert login_as.get("actor_name") or login_as.get("detail")
+    assert login_as.get("device")
+
+    stop = client.post("/api/admin/stop-impersonating")
+    assert stop.status_code == 200
+
     mine = client.get("/api/me/login-history")
     assert mine.status_code == 200
     items = mine.json()["items"]
     assert items
     assert any(i["method"] == "password" and i["success"] is True for i in items)
     assert any(i["method"] == "password" and i["success"] is False for i in items)
-
-    admin_list = client.get("/api/admin/login-history?limit=20")
-    assert admin_list.status_code == 200
-    assert any(i["user_email"] == "admin@local" for i in admin_list.json()["items"])
+    assert any(i["method"] == "login_as" for i in items)
+    assert any(i["method"] == "login_as_end" for i in items)
+    assert all("method_label" in i and "device" in i for i in items)

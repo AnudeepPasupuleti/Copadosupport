@@ -299,11 +299,13 @@ class LoginHistory(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
-    method: Mapped[str] = mapped_column(String(32), nullable=False)  # password, github, google
+    actor_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
+    method: Mapped[str] = mapped_column(String(32), nullable=False)
+    # password, github, google, login_as, login_as_end
     success: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     ip: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
-    user_agent: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    detail: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    user_agent: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    detail: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -425,6 +427,12 @@ def _migrate_schema() -> None:
 
         if "org_teams" in _existing_tables(conn):
             _add_column(conn, "org_teams", "workspace_id INTEGER")
+
+        if "login_history" in _existing_tables(conn):
+            _add_column(conn, "login_history", "actor_id INTEGER")
+
+        if "login_history" in _existing_tables(conn):
+            _add_column(conn, "login_history", "actor_id INTEGER")
 
 
 def _existing_tables(conn) -> set[str]:

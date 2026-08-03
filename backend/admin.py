@@ -109,8 +109,13 @@ def admin_login_history(
     if user_id is not None:
         q = q.filter(LoginHistory.user_id == user_id)
     rows = q.limit(limit).all()
-    users = {u.id: u for u in db.query(User).filter(User.id.in_([r.user_id for r in rows if r.user_id])).all()}
-    return {"items": [login_history_dict(r, users.get(r.user_id)) for r in rows]}
+    ids = {r.user_id for r in rows if r.user_id} | {r.actor_id for r in rows if r.actor_id}
+    users = {u.id: u for u in db.query(User).filter(User.id.in_(ids)).all()} if ids else {}
+    return {
+        "items": [
+            login_history_dict(r, users.get(r.user_id), users.get(r.actor_id)) for r in rows
+        ]
+    }
 
 
 @router.get("/status")
@@ -286,6 +291,29 @@ def impersonate_user(
 
     request.session["impersonator_id"] = admin.id
     request.session["user_id"] = target.id
+    from .login_history import record_login
+
+    admin_label = admin.name or admin.email or admin.username or f"Admin #{admin.id}"
+    target_label = target.name or target.email or f"User #{target.id}"
+    record_login(
+        db,
+        request=request,
+        method="login_as",
+        user=target,
+        actor=admin,
+        success=True,
+        detail=f"Session started by {admin_label}",
+    )
+    record_login(
+        db,
+        request=request,
+        method="login_as",
+        user=admin,
+        actor=admin,
+        success=True,
+        detail=f"Logged in as {target_label}",
+    )
+    db.commit()
     return {"ok": True, "user": user_to_dict(target, request)}
 
 
@@ -300,8 +328,36 @@ def stop_impersonating(request: Request, db: Session = Depends(get_db)):
         request.session.clear()
         raise HTTPException(status_code=401, detail="Not authenticated")
 
+    target_id = request.session.get("user_id")
+    target = db.get(User, target_id) if target_id else None
+
     request.session.pop("impersonator_id", None)
     request.session["user_id"] = admin.id
+
+    from .login_history import record_login
+
+    admin_label = admin.name or admin.email or admin.username or f"Admin #{admin.id}"
+    if target:
+        target_label = target.name or target.email or f"User #{target.id}"
+        record_login(
+            db,
+            request=request,
+            method="login_as_end",
+            user=target,
+            actor=admin,
+            success=True,
+            detail=f"Admin {admin_label} returned to their account",
+        )
+        record_login(
+            db,
+            request=request,
+            method="login_as_end",
+            user=admin,
+            actor=admin,
+            success=True,
+            detail=f"Ended Login as {target_label}",
+        )
+        db.commit()
     return {"ok": True, "user": user_to_dict(admin, request)}
 
 

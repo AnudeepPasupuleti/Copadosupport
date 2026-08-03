@@ -77,7 +77,7 @@ def login(body: LoginBody, request: Request, db: Session = Depends(get_db)):
 
     request.session.clear()
     request.session["user_id"] = user.id
-    record_login(db, request=request, method="password", user=user, success=True)
+    record_login(db, request=request, method="password", user=user, success=True, detail="Signed in with password")
     db.commit()
     return {"ok": True, "user": user_to_dict(user, request)}
 
@@ -194,7 +194,14 @@ async def github_callback(request: Request, db: Session = Depends(get_db)):
     db.refresh(user)
     request.session.clear()
     request.session["user_id"] = user.id
-    record_login(db, request=request, method="github", user=user, success=True)
+    record_login(
+        db,
+        request=request,
+        method="github",
+        user=user,
+        success=True,
+        detail="Signed in with GitHub",
+    )
     db.commit()
     return RedirectResponse(url="/", status_code=302)
 
@@ -241,7 +248,14 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
     db.refresh(user)
     request.session.clear()
     request.session["user_id"] = user.id
-    record_login(db, request=request, method="google", user=user, success=True)
+    record_login(
+        db,
+        request=request,
+        method="google",
+        user=user,
+        success=True,
+        detail="Signed in with Google",
+    )
     db.commit()
     return RedirectResponse(url="/", status_code=302)
 
